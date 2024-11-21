@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 import cv2
 import numpy as np
 import speech_recognition as sr
 from pydub import AudioSegment
 import os
 import io
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -15,6 +16,8 @@ label_map = {}
 current_label = 0
 training_data = []
 labels = []
+
+door_unlocked = True
 
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -48,6 +51,30 @@ for person_name in os.listdir(KNOWN_FACES_DIR):
 # Train face recognizer
 if training_data:
     face_recognizer.train(training_data, np.array(labels))
+
+
+@app.route("/toggle", methods=["POST"])
+def toggle():
+    global door_unlocked
+    # Toggle the door_unlocked variable
+    door_unlocked = not door_unlocked
+    return redirect(url_for("display"))
+
+
+
+
+@app.route("/")
+def display():
+    global door_unlocked
+    # Load CSV data
+    try:
+        df = pd.read_csv("voice_memos.csv")
+        csv_html = df.to_html(index=False, classes="table table-striped")
+    except FileNotFoundError:
+        csv_html = "<p>No voice_memos.csv file found.</p>"
+    
+    # Render the page
+    return render_template("index.html", door_unlocked=door_unlocked, csv_html=csv_html)
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
