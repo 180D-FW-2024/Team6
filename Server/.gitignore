@@ -1,3 +1,4 @@
-known_faces/
-recvd_faces/
+*.jpg
+*.png
 voice_memos.csv
+*~

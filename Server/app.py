@@ -22,7 +22,7 @@ labels = []
 door_unlocked = True
 
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
 
 for person_name in os.listdir(KNOWN_FACES_DIR):
     person_dir = os.path.join(KNOWN_FACES_DIR, person_name)
