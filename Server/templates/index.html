@@ -22,6 +22,25 @@
         <div class="table-responsive">
             {{ csv_html | safe }}
         </div>
+
+        <h2>Visitors</h2>
+        <div class="row">
+            {% if recvd_faces_paths %}
+                {% for image_path in recvd_faces_paths %}
+                {% if image_path.endswith('.jpg') or image_path.endswith('.png') %}
+                <div class="col-md-4">
+                    <div class="thumbnail">
+                        <img src="/static/recvd_faces/{{image_path}}" width="250" height="auto">
+                        <div class="caption">
+                            <p>{{image_path}}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+
     </div>
 </body>
 </html>

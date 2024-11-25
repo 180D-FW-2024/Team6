@@ -6,11 +6,13 @@ from pydub import AudioSegment
 import os
 import io
 import pandas as pd
+import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 # Folder where known faces are stored, each subdirectory is a person
-KNOWN_FACES_DIR = 'known_faces'
+KNOWN_FACES_DIR = './static/known_faces'
+RECVD_FACES_DIR = './static/recvd_faces'
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
 label_map = {}
 current_label = 0
@@ -20,7 +22,7 @@ labels = []
 door_unlocked = True
 
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
 
 for person_name in os.listdir(KNOWN_FACES_DIR):
     person_dir = os.path.join(KNOWN_FACES_DIR, person_name)
@@ -72,9 +74,13 @@ def display():
         csv_html = df.to_html(index=False, classes="table table-striped")
     except FileNotFoundError:
         csv_html = "<p>No voice_memos.csv file found.</p>"
+
+    # Load image data
+    recvd_faces_paths = os.listdir(RECVD_FACES_DIR)
     
     # Render the page
-    return render_template("index.html", door_unlocked=door_unlocked, csv_html=csv_html)
+    return render_template("index.html", door_unlocked=door_unlocked, csv_html=csv_html,
+        recvd_faces_paths=recvd_faces_paths)
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
@@ -85,19 +91,26 @@ def receive_image():
     img_np = np.frombuffer(file.read(), np.uint8)
     image = cv2.imdecode(img_np, cv2.IMREAD_GRAYSCALE)
 
-    faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
-    if len(faces) == 0:
-        return jsonify({'error': 'No face detected'}), 400
+    # Also save the image
+    cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
 
-    x, y, w, h = faces[0]
-    face_to_recognize = image[y:y + h, x:x + w]
+    # faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
+    # if len(faces) == 0:
+    #     return jsonify({'error': 'No face detected'}), 400
+    
+    # Integrate face recognition later:
 
-    label, confidence = face_recognizer.predict(face_to_recognize)
-    if confidence < 100:  # Adjust threshold based on your needs
-        matched_name = label_map.get(label, "Unknown")
-        return jsonify({'name': matched_name, 'confidence': confidence})
-    else:
-        return jsonify({'name': 'Unknown', 'confidence': confidence})
+    # x, y, w, h = faces[0]
+    # face_to_recognize = image[y:y + h, x:x + w]
+
+    # face_to_recognize = image
+    # label, confidence = face_recognizer.predict(face_to_recognize)
+    # if confidence < 100:  # Adjust threshold based on your needs
+    #     matched_name = label_map.get(label, "Unknown")
+    #     return jsonify({'name': matched_name, 'confidence': confidence})
+    # else:
+    #     return jsonify({'name': 'Unknown', 'confidence': confidence})
+    return '', 200 ###
     
 @app.route('/receiveaudio', methods=['POST'])    
 def receive_audio():
@@ -130,6 +143,14 @@ def receive_audio():
     except sr.RequestError:
         return jsonify({'error': 'Could not request results from the speech recognition service'}), 500
 
+# From Rpi
+@app.route('/receiveposition', methods=['POST'])
+def receive_open():
+    global door_unlocked
+    state = request.form['position']
+    # print(request.form)
+    door_unlocked = (state == 'unlocked')
+    return '', 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5002)

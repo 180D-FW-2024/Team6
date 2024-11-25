@@ -1,3 +1,4 @@
+# Example code for face detection and recognition using opencv
 # Largely referenced code at :
 # https://towardsdatascience.com/real-time-face-recognition-an-end-to-end-project-b738bb0f7348
 # https://www.superdatascience.com/blogs/opencv-face-recognition
