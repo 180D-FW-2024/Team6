@@ -1,0 +1,8 @@
+flask==3.1.0
+opencv-python==4.10.0.84
+opencv-contrib-python==4.10.0.84
+numpy==1.26.4
+SpeechRecognition==3.11.0
+pydub==0.25.1
+pandas==2.2.3
+DateTime==5.5
