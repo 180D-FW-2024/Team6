@@ -8,5 +8,10 @@ To run server:
 
     create voice_memos.csv file
 
+    run pip install -r requirements.txt
+
     run 
         python app.py
+
+
+    apt-get install ffmpeg libavcodec-extra
