@@ -17,3 +17,11 @@ Run:
 - Start the server from another device
 - Use ngrok to forward to the port the server is running on (ngrok http port#)
 - python3 main.py http://serverlink
+
+
+To set up the script to run at boot time, use crontab via:
+    sudo crontab -e
+and enter:
+    @reboot /home/pi/Desktop/capstone/rpi/launch.sh
+You may need to edit the links and paths in the launch.sh file.
+(Note: program output will not be printed to the interactive console this way.)
