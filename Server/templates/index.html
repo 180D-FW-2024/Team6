@@ -17,7 +17,11 @@
         </form>
 
         <hr>
+
+        <h2 class="mb-3">Door Open: <b>{{ "Yes" if door_open else "No" }}</b></h2>
         
+
+
         <h2>Voice Memos</h2>
         <div class="table-responsive">
             {{ csv_html | safe }}

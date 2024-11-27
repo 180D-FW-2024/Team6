@@ -13,6 +13,8 @@ app = Flask(__name__, static_url_path='/static')
 # Folder where known faces are stored, each subdirectory is a person
 KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
+CSV_FILE = "voice_memos.csv"
+
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
 label_map = {}
 current_label = 0
@@ -20,6 +22,18 @@ training_data = []
 labels = []
 
 door_unlocked = True
+door_open = True
+
+# Ensure required directory and file exist
+if not os.path.exists(KNOWN_FACES_DIR):
+    os.makedirs(KNOWN_FACES_DIR)
+
+if not os.path.exists(RECVD_FACES_DIR):
+    os.makedirs(RECVD_FACES_DIR)
+
+if not os.path.exists(CSV_FILE):
+    # Create a new CSV file with a basic structure
+    pd.DataFrame(columns=["Timestamp", "Memo"]).to_csv(CSV_FILE, index=False)
 
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
 face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
@@ -67,7 +81,7 @@ def toggle():
 
 @app.route("/")
 def display():
-    global door_unlocked
+    global door_unlocked, door_open
     # Load CSV data
     try:
         df = pd.read_csv("voice_memos.csv")
@@ -79,8 +93,9 @@ def display():
     recvd_faces_paths = os.listdir(RECVD_FACES_DIR)
     
     # Render the page
-    return render_template("index.html", door_unlocked=door_unlocked, csv_html=csv_html,
+    return render_template("index.html", door_unlocked=door_unlocked, door_open=door_open, csv_html=csv_html,
         recvd_faces_paths=recvd_faces_paths)
+
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
@@ -137,6 +152,9 @@ def receive_audio():
     try:
         # Recognize the speech in the audio
         text = recognizer.recognize_google(audio)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(CSV_FILE, 'a') as f:
+            f.write(f"{timestamp}, {text}\n")
         return jsonify({'transcription': text})
     except sr.UnknownValueError:
         return jsonify({'error': 'Could not understand audio'}), 400
@@ -146,11 +164,16 @@ def receive_audio():
 # From Rpi
 @app.route('/receiveposition', methods=['POST'])
 def receive_open():
-    global door_unlocked
+    global door_open
     state = request.form['position']
     # print(request.form)
-    door_unlocked = (state == 'unlocked')
+    door_open = (state == 'unlocked')
     return '', 200
+
+@app.route("/getunlocked", methods=["GET"])
+def get_unlocked():
+    global door_unlocked
+    return jsonify({'door_unlocked': door_unlocked})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)
