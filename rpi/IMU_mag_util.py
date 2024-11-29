@@ -15,7 +15,9 @@ import time
 import datetime
 import math
 
-bus = smbus.SMBus(1) # for I2C
+# For i2c with HW: use bus 1 (unreliable b/c of magnetometer clock stretching?)
+# For i2c in SW(using overlay): use bus 3
+bus = smbus.SMBus(3) 
 
 # magnetometer registers
 LIS3MDL_ADDRESS     = 0x1C
@@ -33,8 +35,8 @@ LIS3MDL_OUT_Z_H     = 0x2D
 
 RAD_TO_DEG = 57.29578
 M_PI = 3.14159265358979323846
-MAG_LPF_FACTOR = 0.4    # Low pass filter constant magnetometer
-MAG_MEDIANTABLESIZE = 9         # Median filter table size for magnetometer. Higher = smoother but a longer delay
+MAG_LPF_FACTOR = 0.4        # Low pass filter constant magnetometer
+MAG_MEDIANTABLESIZE = 9     # Median filter table size for magnetometer. Higher = smoother but a longer delay
 
 
 # for calibration -- run calibrate() and open the door fully
@@ -46,14 +48,11 @@ magYmax =  -32767
 magZmax =  -32767
 
 
-
-
 def detectIMU():
     try:
         #Check for BerryIMUv3 (LIS3MDL(magnetometer) only)
         #If no LSM6DSL or LIS3MDL is connected, there will be an I2C bus error and the program will exit.
         LIS3MDL_WHO_AM_I_response = (bus.read_byte_data(LIS3MDL_ADDRESS, LIS3MDL_WHO_AM_I))
-
     except IOError as f:
         print('IMU not detected')
         sys.exit()
@@ -92,15 +91,12 @@ def readByte(device_address,register):
 # Initialize magnetometer and interrupt detection
 def initIMU():
     # refer to spec sheet about control registers
-    # all are currently on "high performance"
-
     #initialise the magnetometer
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG1, 0b01011100)         # High performance, ODR 80 Hz, FAST ODR disabled and Selft test disabled.
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG2, 0b00100000)         # +/- 8 gauss
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG3, 0b00000000)         # Continuous-conversion mode
 
-
-
+# Determine range of mag values for each axis over the range of motion
 def calibrateIMU():
     global magXmin, magXmax, magYmin, magYmax, magZmin, magZmax
     rawmagXmin =  32767
