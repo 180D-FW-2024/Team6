@@ -99,8 +99,9 @@ def display():
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
+    global door_unlocked
     if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
+        return jsonify({'error': 'No image provided'}), 302
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)
@@ -109,22 +110,28 @@ def receive_image():
     # Also save the image
     cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
 
-    # faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
-    # if len(faces) == 0:
-    #     return jsonify({'error': 'No face detected'}), 400
+    faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
+    if len(faces) == 0:
+        return jsonify({'error': 'No face detected'}), 300
     
-    # Integrate face recognition later:
+    #Integrate face recognition later:
 
-    # x, y, w, h = faces[0]
-    # face_to_recognize = image[y:y + h, x:x + w]
+    x, y, w, h = faces[0]
+    face_to_recognize = image[y:y + h, x:x + w]
 
-    # face_to_recognize = image
-    # label, confidence = face_recognizer.predict(face_to_recognize)
-    # if confidence < 100:  # Adjust threshold based on your needs
-    #     matched_name = label_map.get(label, "Unknown")
-    #     return jsonify({'name': matched_name, 'confidence': confidence})
-    # else:
-    #     return jsonify({'name': 'Unknown', 'confidence': confidence})
+    face_to_recognize = image
+    label, confidence = face_recognizer.predict(face_to_recognize)
+    if confidence < 80:  # Adjust threshold based on your needs
+        matched_name = label_map.get(label, "Unknown")
+        door_unlocked = True
+        print(confidence)
+        print(matched_name)
+        
+        return jsonify({'name': matched_name, 'confidence': confidence})
+    else:
+        print("nobody")
+        print(confidence)
+        return '', 301
     return '', 200 ###
     
 @app.route('/receiveaudio', methods=['POST'])    
