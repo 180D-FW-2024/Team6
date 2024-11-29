@@ -27,7 +27,6 @@ def signalHandler(sig, frame):
 # Calibrate the magnetometer and get the heading of the closed door
 def calibrateDoorPosition():
     IMU.calibrateIMU()  # determine min/max magnetometer readings
-
     print("Now please close the door.")
     time.sleep(5)
 
@@ -61,7 +60,6 @@ def extractFace(frame):
     )
     for (x,y,w,h) in faces:
         extracted_faces.append(gray_image[2*y:2*(y+h), 2*x:2*(x+w)])
-        # extracted_faces.append
 
     return extracted_faces, faces
 
@@ -107,7 +105,6 @@ if __name__ == '__main__':
     GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
     # GPIO.add_event_detect(INTERRUPT_PIN, GPIO.RISING, callback=LEDnotification, bouncetime=300)
 
-    
 
     # Initialize camera
     camera = picamera.PiCamera()
@@ -124,9 +121,11 @@ if __name__ == '__main__':
     closedDoorHeading = calibrateDoorPosition()
     print(f"Closed heading: {closedDoorHeading}\n")
 
-    doorSamples = 20    # num samples to use to determine door open/not
-    checkDoorPeriod = 10    # num seconds to periodically check door position
+    doorSamples = 25    # num samples to use to determine door open/not
+    checkDoorPeriod = 5    # num seconds to periodically check door position
+    checkServerPeriod = 3   # num seconds to check lock state on server
     lastDoorCheck = datetime.datetime.now()
+    lastServerCheck = datetime.datetime.now()
 
     # Event loop
     while True:
@@ -155,7 +154,8 @@ if __name__ == '__main__':
             print(r)
             time.sleep(1) # remove later
 
-        # query server if door should open or not
-        GPIO.output(SOLENOID_PIN, 0 if checkServerUnlock() else 1)
+        # query server periodically (3 seconds) if door should open or not
+        if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
+            lastServerCheck = datetime.datetime.now()
+            GPIO.output(SOLENOID_PIN, 0 if checkServerUnlock() else 1)
 
-        # time.sleep(0.1)   #simulate some other code happening
