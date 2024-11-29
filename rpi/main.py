@@ -1,6 +1,7 @@
 import IMU_mag_util as IMU
 import picamera
 import requests
+import RPi.GPIO as GPIO
 import time
 import datetime
 import signal
@@ -14,9 +15,11 @@ closedDoorHeading = 0
 openThresholdAngle = 10
 server = None
 
+SOLENOID_PIN = 23
+
 # Used to clean up when Ctrl-c is pressed
 def signalHandler(sig, frame):
-    # GPIO.cleanup()
+    GPIO.cleanup()
     print("Exiting... to do some clean up later")
     camera.close()
     sys.exit(0)
@@ -58,6 +61,7 @@ def extractFace(frame):
     )
     for (x,y,w,h) in faces:
         extracted_faces.append(gray_image[2*y:2*(y+h), 2*x:2*(x+w)])
+        # extracted_faces.append
 
     return extracted_faces, faces
 
@@ -81,15 +85,29 @@ def detectFaces(path):
         paths.append(str(path + "/face_" + str(i) + ".jpg"))
     return paths
 
+# Query server and return bool if door should unlock(true)/lock(false)
+def checkServerUnlock():
+    r = requests.get(server+'/getunlocked')
+    data = r.json()
+    if data['door_unlocked']:
+        print("Server says UNLOCK")
+    else:
+        print("Server says LOCK")
+    return data['door_unlocked']
+
+
 if __name__ == '__main__':
+    GPIO.cleanup()
     server = sys.argv[1]
     signal.signal(signal.SIGINT, signalHandler)
     # Ex for handling interrupts:
-    # GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+    GPIO.setmode(GPIO.BCM) # Use physical pin numbering
     # GPIO.setup(INTERRUPT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    # GPIO.setup(LED_PIN, GPIO.OUT)
-    # GPIO.output(LED_PIN, 0)
+    GPIO.setup(SOLENOID_PIN, GPIO.OUT)
+    GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
     # GPIO.add_event_detect(INTERRUPT_PIN, GPIO.RISING, callback=LEDnotification, bouncetime=300)
+
+    
 
     # Initialize camera
     camera = picamera.PiCamera()
@@ -137,4 +155,7 @@ if __name__ == '__main__':
             print(r)
             time.sleep(1) # remove later
 
-        time.sleep(0.1)   #simulate some other code happening
+        # query server if door should open or not
+        GPIO.output(SOLENOID_PIN, 0 if checkServerUnlock() else 1)
+
+        # time.sleep(0.1)   #simulate some other code happening

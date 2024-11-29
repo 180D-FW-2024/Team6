@@ -58,7 +58,7 @@ def detectIMU():
         print('IMU not detected')
         sys.exit()
     else:
-        if (LIS3MDL_WHO_AM_I_response == 0x6A):
+        if (LIS3MDL_WHO_AM_I_response == 0x3D):
             print("Found BerryIMUv3 (LIS3MDL)")
     time.sleep(1)
 
@@ -112,12 +112,16 @@ def calibrateIMU():
     print('Open the door as far as possible over ten seconds.')
     start = datetime.datetime.now()
     while (datetime.datetime.now() - start).seconds < 10:
-        rawmagXmin = min(rawmagXmin, readMAGx())
-        rawmagYmin = min(rawmagYmin, readMAGy())
-        rawmagZmin = min(rawmagZmin, readMAGz())
-        rawmagXmax = max(rawmagXmax, readMAGx())
-        rawmagYmax = max(rawmagYmax, readMAGy())
-        rawmagZmax = max(rawmagZmax, readMAGz())
+        magX = readMAGx()
+        magY = readMAGy()
+        magZ = readMAGz()
+        rawmagXmin = min(rawmagXmin, magX)
+        rawmagYmin = min(rawmagYmin, magY)
+        rawmagZmin = min(rawmagZmin, magZ)
+        rawmagXmax = max(rawmagXmax, magX)
+        rawmagYmax = max(rawmagYmax, magY)
+        rawmagZmax = max(rawmagZmax, magZ)
+        # time.sleep(0.25 /1e6) # ** not sure if necessary
     magXmax = rawmagXmax
     magYmax = rawmagYmax
     magZmax = rawmagZmax
