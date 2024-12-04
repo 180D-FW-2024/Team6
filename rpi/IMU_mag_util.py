@@ -105,9 +105,9 @@ def calibrateIMU():
     rawmagXmax =  -32767
     rawmagYmax =  -32767
     rawmagZmax =  -32767
-    print('Open the door as far as possible over ten seconds.')
+    print('Open the door as far as possible over five seconds.')
     start = datetime.datetime.now()
-    while (datetime.datetime.now() - start).seconds < 10:
+    while (datetime.datetime.now() - start).seconds < 5:
         magX = readMAGx()
         magY = readMAGy()
         magZ = readMAGz()
@@ -142,7 +142,7 @@ def getHeading(samples):
     oldYMagRawValue = 0
     oldZMagRawValue = 0
     
-    headings = samples * [0]
+    headings = (samples - MAG_MEDIANTABLESIZE) * [0]
     for i in range (0, samples):
         MAGx = readMAGx()
         MAGy = readMAGy()
@@ -200,8 +200,9 @@ def getHeading(samples):
         if heading < 0:
             heading += 360
         
-        headings[i] = heading
+        if i>=MAG_MEDIANTABLESIZE:
+            headings[i-MAG_MEDIANTABLESIZE] = heading
 
     # return median heading
     headings.sort()
-    return headings[samples//2]
+    return headings[(samples - MAG_MEDIANTABLESIZE)//2]

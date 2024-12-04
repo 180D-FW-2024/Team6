@@ -9,6 +9,9 @@ import sys
 import cv2
 import numpy as np
 
+import sounddevice as sd
+from scipy.io.wavfile import write
+
 
 doorIsOpen = False
 closedDoorHeading = 0
@@ -16,6 +19,8 @@ openThresholdAngle = 10
 server = None
 
 SOLENOID_PIN = 23
+LED_PIN = 22
+BUTTON_PIN = 27
 
 # Used to clean up when Ctrl-c is pressed
 def signalHandler(sig, frame):
@@ -53,7 +58,7 @@ def extractFace(frame):
     
     faces = face_cascade.detectMultiScale(
         shrunk_image,
-        scaleFactor=1.2,
+        scaleFactor=1.2,    # could increase for speed but may miss faces at missed scales
         minNeighbors=5,
         minSize=(100, 100), # min size of faces in pixels to detect
         flags=cv2.CASCADE_SCALE_IMAGE
@@ -76,11 +81,18 @@ def detectFaces(path):
 
     extracted_faces, _ = extractFace(frame)
     print(f"face count: {len(extracted_faces)}")
+
+    # turn LED on if faces detected
+    GPIO.output(LED_PIN, 1 if len(extracted_faces) > 0 else 0)
     
     for i in range(len(extracted_faces)):   # how should we handle multiple people?
         # save as path/face_#.jpg
         cv2.imwrite(path + "/face_" + str(i) + ".jpg", extracted_faces[i])
         paths.append(str(path + "/face_" + str(i) + ".jpg"))
+    
+    time.sleep(0.5) # may take out later
+    # turn LED off
+    GPIO.output(LED_PIN, 0)
     return paths
 
 # Query server and return bool if door should unlock(true)/lock(false)
@@ -93,17 +105,43 @@ def checkServerUnlock():
         print("Server says LOCK")
     return data['door_unlocked']
 
+# Handle button press for speech recording
+def buttonHandling(channel):
+    print("button press")
+    # do some stuff with the mic
+    #Audio settings
+    RATE = 44100          # Sample rate
+    DURATION = 5          # Duration of recording (in seconds)
+    OUTPUT_FILENAME = "output.wav"
+
+    # Record audio
+    print("Recording...")
+    audio_data = sd.rec(int(DURATION * RATE), samplerate=RATE, channels=1, dtype='int16')
+    sd.wait()  # Wait for the recording to finish
+    print("Recording finished!")
+
+    # Save as WAV file
+    write(OUTPUT_FILENAME, RATE, audio_data)
+    print(f"Saved recording to {OUTPUT_FILENAME}")
+
+    # send to server
+    r = requests.post(server+'/receiveaudio', files={'audio': open(OUTPUT_FILENAME, "rb")})
+    print(r)
+
 
 if __name__ == '__main__':
     GPIO.cleanup()
     server = sys.argv[1]
     signal.signal(signal.SIGINT, signalHandler)
-    # Ex for handling interrupts:
     GPIO.setmode(GPIO.BCM) # Use physical pin numbering
-    # GPIO.setup(INTERRUPT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
     GPIO.setup(SOLENOID_PIN, GPIO.OUT)
+    GPIO.setup(LED_PIN, GPIO.OUT)
+    GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #pull down 
+
     GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
-    # GPIO.add_event_detect(INTERRUPT_PIN, GPIO.RISING, callback=LEDnotification, bouncetime=300)
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    # GPIO.add_event_detect(BUTTON_PIN, GPIO.RISING, callback=buttonHandling, bouncetime=2000)
 
 
     # Initialize camera
@@ -154,8 +192,12 @@ if __name__ == '__main__':
             print(r)
             time.sleep(1) # remove later
 
-        # query server periodically (3 seconds) if door should open or not
+        # Query server periodically (3 seconds) if door should open or not
         if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
             lastServerCheck = datetime.datetime.now()
-            GPIO.output(SOLENOID_PIN, 0 if checkServerUnlock() else 1)
-
+            GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
+        
+        # Check if button pressed (for speech recording)
+        state = GPIO.input(BUTTON_PIN)
+        if state:
+            buttonHandling(None)
