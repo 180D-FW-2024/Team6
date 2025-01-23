@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask_cors import CORS
 import cv2
 import numpy as np
 import speech_recognition as sr
@@ -13,6 +14,7 @@ import mongodb as db
 
 
 app = Flask(__name__, static_url_path='/static')
+CORS(app)
 
 # Folder where known faces are stored, each subdirectory is a person
 KNOWN_FACES_DIR = './static/known_faces'
@@ -74,6 +76,22 @@ for person_name in os.listdir(KNOWN_FACES_DIR):
 # Train face recognizer
 if training_data:
     face_recognizer.train(training_data, np.array(labels))
+
+# Sample route to fetch door status
+@app.route('/api/door_status', methods=['GET'])
+def door_status():
+    # Return current door status
+    return jsonify({"door_unlocked": door_unlocked, "door_open": door_open})
+
+# Sample route to get voice memos
+@app.route('/api/voice_memos', methods=['GET'])
+def voice_memos():
+    try:
+        df = pd.read_csv("voice_memos.csv")
+        memos = df.to_dict(orient="records")  # Convert DataFrame to list of dicts
+        return jsonify(memos)
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
 
 
 @app.route("/toggle", methods=["POST"])
