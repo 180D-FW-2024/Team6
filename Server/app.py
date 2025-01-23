@@ -8,6 +8,10 @@ import io
 import pandas as pd
 import datetime
 
+import mongodb as db
+
+
+
 app = Flask(__name__, static_url_path='/static')
 
 # Folder where known faces are stored, each subdirectory is a person
@@ -15,7 +19,10 @@ KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
 CSV_FILE = "voice_memos.csv"
 
+
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+db.initDB()
+
 label_map = {}
 current_label = 0
 training_data = []
@@ -78,7 +85,6 @@ def toggle():
 
 
 
-
 @app.route("/")
 def display():
     global door_unlocked, door_open
@@ -91,10 +97,14 @@ def display():
 
     # Load image data
     recvd_faces_paths = os.listdir(RECVD_FACES_DIR)
-    
+
+
+    # Example: get photos from the camera of the user called "person a"
+    visitor_photos = db.getVisitors("person a")
+
     # Render the page
     return render_template("index.html", door_unlocked=door_unlocked, door_open=door_open, csv_html=csv_html,
-        recvd_faces_paths=recvd_faces_paths)
+        recvd_faces_paths=recvd_faces_paths, visitor_photos=visitor_photos)
 
 
 @app.route('/receive', methods=['POST'])
@@ -113,8 +123,6 @@ def receive_image():
     faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
     if len(faces) == 0:
         return jsonify({'error': 'No face detected'}), 300
-    
-    #Integrate face recognition later:
 
     x, y, w, h = faces[0]
     face_to_recognize = image[y:y + h, x:x + w]

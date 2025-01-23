@@ -31,6 +31,7 @@
 
         <h2>Visitors</h2>
         <div class="row">
+            <h3> from local</h3>
             {% if recvd_faces_paths %}
                 {% for image_path in recvd_faces_paths %}
                 {% if image_path.endswith('.jpg') or image_path.endswith('.png') %}
@@ -45,6 +46,17 @@
                 {% endif %}
                 {% endfor %}
             {% endif %}
+            <h3> from database</h3>
+            {% for photo in visitor_photos %}
+                <div class="col-md-4">
+                    <div class="thumbnail">
+                        <img src="data:image/png;base64,{{photo['data']}}" width="250" height="auto">
+                        <div class="caption">
+                            <p>{{photo["timestamp"]}}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
 
     </div>
