@@ -6,17 +6,21 @@ function App() {
   const [doorStatus, setDoorStatus] = useState(null);
   const [voiceMemos, setVoiceMemos] = useState([]);
 
-  // Fetch door status from Flask API
   useEffect(() => {
     axios.get('http://localhost:5002/api/door_status')
-      .then(response => setDoorStatus(response.data))
+    .then(response => {
+      console.log('Door status response:', response.data);
+      setDoorStatus(response.data);
+    })
       .catch(error => console.error('Error fetching door status:', error));
   }, []);
-
-  // Fetch voice memos from Flask API
+  
   useEffect(() => {
     axios.get('http://localhost:5002/api/voice_memos')
-      .then(response => setVoiceMemos(response.data))
+      .then(response => {
+        console.log('Voice memos response:', response.data);
+        setVoiceMemos(response.data);
+      })
       .catch(error => console.error('Error fetching voice memos:', error));
   }, []);
 

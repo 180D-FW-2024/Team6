@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask_cors import CORS
 import cv2
 import numpy as np
 import speech_recognition as sr
@@ -9,6 +10,7 @@ import pandas as pd
 import datetime
 
 app = Flask(__name__, static_url_path='/static')
+CORS(app)
 
 # Folder where known faces are stored, each subdirectory is a person
 KNOWN_FACES_DIR = './static/known_faces'
