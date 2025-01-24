@@ -28,7 +28,7 @@ def initDB():
 
     # img = cv2.imread("static/recvd_faces/orange.png")
     # addVisitor("person a", img, datetime.datetime.now())
-    # img = cv2.imread("static/recvd_faces/blue_yellow.png")
+    # img = cv2.imread("static/recvd_faces/11-28-2024_22.52.28.jpg")
     # addVisitor("person a", img, datetime.datetime.now())
 
 
@@ -37,7 +37,7 @@ def verifyUser(user, password):
     return db.Users.find_one({"name" : user})['password'] == password
 
 
-# Return array of images encoded as base-64 strings
+# Return array of images encoded as base-64 strings(timestamp and data)
 def getVisitors(user):
 
     photos = db.Visitors.find({"user_name" : user})

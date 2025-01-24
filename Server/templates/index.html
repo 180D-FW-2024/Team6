@@ -101,11 +101,23 @@
         </section>
 
         <section id="faces">
-            <h2>Received Faces</h2>
+            <h2>Received Faces(Local)</h2>
             <div class="faces-gallery">
                 {% for face in recvd_faces_paths %}
                     <div class="face-item">
                         <img src="{{ url_for('static', filename='recvd_faces/' + face) }}" alt="Received Face">
+                    </div>
+                {% endfor %}
+            </div>
+
+            <h2>Received Faces(mongodb)</h2>
+            <div class="faces-gallery">
+                {% for photo in visitor_photos %}
+                    <div class="face-item">
+                        <img src="data:image/png;base64,{{photo['data']}}" alt="{{photo['timestamp']}}">
+                        <div class="caption">
+                            <p>{{photo["timestamp"]}}</p>
+                        </div>
                     </div>
                 {% endfor %}
             </div>

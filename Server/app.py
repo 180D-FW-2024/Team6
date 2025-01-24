@@ -93,6 +93,12 @@ def voice_memos():
     except FileNotFoundError:
         return jsonify({"error": "File not found"}), 404
 
+# Sample route to get visitor images as base64 strings
+@app.route('/api/visitors', methods=['GET'])
+def visitors():
+    return db.getVisitors(request.args.get('userName'))
+
+
 
 @app.route("/toggle", methods=["POST"])
 def toggle():

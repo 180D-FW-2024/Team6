@@ -82,9 +82,14 @@ section {
 .face-item {
   width: 120px;
   height: 120px;
-  overflow: hidden;
+  /* overflow: hidden; */
   border-radius: 5px;
   border: 1px solid #ddd;
+}
+
+.face-item:hover {
+  width: 200px;
+  height: auto;
 }
 
 .face-item img {
