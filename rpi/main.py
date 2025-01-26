@@ -17,6 +17,7 @@ doorIsOpen = False
 closedDoorHeading = 0
 openThresholdAngle = 10
 server = None
+session = None # used to persist cookie with lock id
 
 SOLENOID_PIN = 23
 LED_PIN = 22
@@ -97,7 +98,7 @@ def detectFaces(path):
 
 # Query server and return bool if door should unlock(true)/lock(false)
 def checkServerUnlock():
-    r = requests.get(server+'/getunlocked')
+    r = session.get(server+'/getunlocked')
     data = r.json()
     if data['door_unlocked']:
         print("Server says UNLOCK")
@@ -125,14 +126,22 @@ def buttonHandling(channel):
     print(f"Saved recording to {OUTPUT_FILENAME}")
 
     # send to server
-    r = requests.post(server+'/receiveaudio', files={'audio': open(OUTPUT_FILENAME, "rb")})
+    r = session.post(server+'/receiveaudio', files={'audio': open(OUTPUT_FILENAME, "rb")})
     print(r)
 
 
 if __name__ == '__main__':
-    GPIO.cleanup()
+    # GPIO.cleanup()
+
+    # Initialize session
+    # should have flask server return a cookie for this guy to set, but figure out later...
+    session = requests.Session()
+    session.cookies.set("lock_id", "1")
+
     server = sys.argv[1]
     signal.signal(signal.SIGINT, signalHandler)
+
+    # Initialize pins
     GPIO.setmode(GPIO.BCM) # Use physical pin numbering
 
     GPIO.setup(SOLENOID_PIN, GPIO.OUT)
@@ -147,8 +156,8 @@ if __name__ == '__main__':
     # Initialize camera
     camera = picamera.PiCamera()
     camera.resolution = (1920, 1080)
-    camera.exposure_mode='sports' #supposedly reduces motion blur
-    time.sleep(2)   #to adjust inital gain and exposure time (auto-adjusts by default)
+    camera.exposure_mode='sports' # supposedly reduces motion blur
+    time.sleep(2)   # to adjust inital gain and exposure time (auto-adjusts by default)
 
     face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
 
@@ -168,7 +177,6 @@ if __name__ == '__main__':
     # Event loop
     while True:
         #poll status (or callback to update on interrupt) to find if door is moving
-        #just periodically compute heading, can set up interrupts later
 
         # Check door position periodically
         if (datetime.datetime.now() - lastDoorCheck).seconds >= checkDoorPeriod:
@@ -181,14 +189,14 @@ if __name__ == '__main__':
             else:
                 print("DOOR IS CLOSED")
             # Notify server (blocking)
-            r = requests.post(server+'/receiveposition', data={'position':'unlocked' if doorIsOpen else 'locked'})
+            r = session.post(server+'/receiveposition', data={'position':'open' if doorIsOpen else 'closed'})
             print(r)
         
         # Check if face detected as often as possible
         faceFiles = detectFaces("detected_faces")
         print(faceFiles)
         for faceFile in faceFiles:
-            r = requests.post(server+'/receive', files={'image': open(faceFile, "rb")})
+            r = session.post(server+'/receive', files={'image': open(faceFile, "rb")})
             print(r)
             time.sleep(1) # remove later
 

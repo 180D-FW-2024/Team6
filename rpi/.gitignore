@@ -2,3 +2,5 @@
 __pycache__
 detected_faces/
 *~
+*.wav
+portaudio/

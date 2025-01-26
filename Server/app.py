@@ -12,7 +12,6 @@ import datetime
 import mongodb as db
 
 
-
 app = Flask(__name__, static_url_path='/static')
 CORS(app)
 
@@ -20,6 +19,8 @@ CORS(app)
 KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
 CSV_FILE = "voice_memos.csv"
+
+DEFAULT_LOCK_ID = "1"
 
 
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
@@ -29,9 +30,6 @@ label_map = {}
 current_label = 0
 training_data = []
 labels = []
-
-door_unlocked = True
-door_open = True
 
 # Ensure required directory and file exist
 if not os.path.exists(KNOWN_FACES_DIR):
@@ -81,59 +79,49 @@ if training_data:
 @app.route('/api/door_status', methods=['GET'])
 def door_status():
     # Return current door status
-    return jsonify({"door_unlocked": door_unlocked, "door_open": door_open})
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return jsonify(db.getDoorState(lock_id))
 
 # Sample route to get voice memos
 @app.route('/api/voice_memos', methods=['GET'])
 def voice_memos():
-    try:
-        df = pd.read_csv("voice_memos.csv")
-        memos = df.to_dict(orient="records")  # Convert DataFrame to list of dicts
-        return jsonify(memos)
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return db.getMemos(lock_id)
 
 # Sample route to get visitor images as base64 strings
 @app.route('/api/visitors', methods=['GET'])
 def visitors():
-    return db.getVisitors(request.args.get('userName'))
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return db.getVisitors(lock_id)
 
 
-
+# Toggle lock status
 @app.route("/toggle", methods=["POST"])
 def toggle():
-    global door_unlocked
-    # Toggle the door_unlocked variable
-    door_unlocked = not door_unlocked
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    db.toggleLock(lock_id)
     return redirect(url_for("display"))
-
-
 
 @app.route("/")
 def display():
-    global door_unlocked, door_open
-    # Load CSV data
-    try:
-        df = pd.read_csv("voice_memos.csv")
-        csv_html = df.to_html(index=False, classes="table table-striped")
-    except FileNotFoundError:
-        csv_html = "<p>No voice_memos.csv file found.</p>"
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    # Load memos
+    memos = db.getMemos(lock_id)
 
     # Load image data
-    recvd_faces_paths = os.listdir(RECVD_FACES_DIR)
+    visitor_photos = db.getVisitors(lock_id)
 
-
-    # Example: get photos from the camera of the user called "person a"
-    visitor_photos = db.getVisitors("person a")
+    # Load door status
+    state = db.getDoorState(lock_id)
 
     # Render the page
-    return render_template("index.html", door_unlocked=door_unlocked, door_open=door_open, csv_html=csv_html,
-        recvd_faces_paths=recvd_faces_paths, visitor_photos=visitor_photos)
+    return render_template("index.html", door_state=state, memos=memos, 
+                           visitor_photos=visitor_photos)
 
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
-    global door_unlocked
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 302
 
@@ -141,8 +129,9 @@ def receive_image():
     img_np = np.frombuffer(file.read(), np.uint8)
     image = cv2.imdecode(img_np, cv2.IMREAD_GRAYSCALE)
 
-    # Also save the image
+    # Save the image locally and in the DB
     cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
+    db.addVisitor(lock_id, image, None)
 
     faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
     if len(faces) == 0:
@@ -153,9 +142,10 @@ def receive_image():
 
     face_to_recognize = image
     label, confidence = face_recognizer.predict(face_to_recognize)
-    if confidence < 80:  # Adjust threshold based on your needs
+
+    if confidence < 80:  # Face recognized (want confidence beneath threshold)
         matched_name = label_map.get(label, "Unknown")
-        door_unlocked = True
+        db.unlockDoor(lock_id)
         print(confidence)
         print(matched_name)
         
@@ -164,10 +154,10 @@ def receive_image():
         print("nobody")
         print(confidence)
         return '', 301
-    return '', 200 ###
     
 @app.route('/receiveaudio', methods=['POST'])    
 def receive_audio():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'audio' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
 
@@ -194,25 +184,27 @@ def receive_audio():
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(CSV_FILE, 'a') as f:
             f.write(f"{timestamp}, {text}\n")
+        db.addMemo(lock_id, text, timestamp)
         return jsonify({'transcription': text})
     except sr.UnknownValueError:
         return jsonify({'error': 'Could not understand audio'}), 400
     except sr.RequestError:
         return jsonify({'error': 'Could not request results from the speech recognition service'}), 500
 
-# From Rpi
+# From Rpi: receive current door position
 @app.route('/receiveposition', methods=['POST'])
 def receive_open():
-    global door_open
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     state = request.form['position']
-    # print(request.form)
-    door_open = (state == 'unlocked')
+    db.setOpenState(lock_id, state == 'open')
     return '', 200
 
+# To Rpi: reply with lock status
 @app.route("/getunlocked", methods=["GET"])
 def get_unlocked():
-    global door_unlocked
-    return jsonify({'door_unlocked': door_unlocked})
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    state = db.getDoorState(lock_id)
+    return jsonify({'door_unlocked': state['door_unlocked']})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

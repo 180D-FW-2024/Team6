@@ -86,30 +86,29 @@
     </header>
 
     <main>
+        <h1>User: {{door_state['id']}}</h1>
         <section class="toggle-door">
-            <h2>Door Status: {{ 'Unlocked' if door_unlocked else 'Locked' }}</h2>
+            
+            <h2>Door Status: {{ 'Unlocked' if door_state['door_unlocked'] else 'Locked' }} 
+                and {{ 'Open' if door_state['door_open'] else 'Closed' }}
+            </h2>
             <form action="{{ url_for('toggle') }}" method="post">
-                <button type="submit">{{ 'Lock Door' if door_unlocked else 'Unlock Door' }}</button>
+                <button type="submit">{{ 'Lock Door' if door_state['door_unlocked'] else 'Unlock Door' }}</button>
             </form>
         </section>
 
         <section id="memo">
-            <h2>Voice Memos</h2>
+            <h2>Voice Memos(mongodb)</h2>
             <div>
-                <div>{{ csv_html|safe }}</div>
+                {% for memo in memos %}
+                    <div>
+                        {{memo}}
+                    </div>
+                {% endfor %}
             </div>
         </section>
 
         <section id="faces">
-            <h2>Received Faces(Local)</h2>
-            <div class="faces-gallery">
-                {% for face in recvd_faces_paths %}
-                    <div class="face-item">
-                        <img src="{{ url_for('static', filename='recvd_faces/' + face) }}" alt="Received Face">
-                    </div>
-                {% endfor %}
-            </div>
-
             <h2>Received Faces(mongodb)</h2>
             <div class="faces-gallery">
                 {% for photo in visitor_photos %}
