@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lock In</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta http-equiv="refresh" content="5">
+
 </head>
 <body>
     <div class="container mt-4">
@@ -29,6 +31,7 @@
 
         <h2>Visitors</h2>
         <div class="row">
+            <h3> from local</h3>
             {% if recvd_faces_paths %}
                 {% for image_path in recvd_faces_paths %}
                 {% if image_path.endswith('.jpg') or image_path.endswith('.png') %}
@@ -43,6 +46,17 @@
                 {% endif %}
                 {% endfor %}
             {% endif %}
+            <h3> from database</h3>
+            {% for photo in visitor_photos %}
+                <div class="col-md-4">
+                    <div class="thumbnail">
+                        <img src="data:image/png;base64,{{photo['data']}}" width="250" height="auto">
+                        <div class="caption">
+                            <p>{{photo["timestamp"]}}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
 
     </div>
@@ -72,26 +86,37 @@
     </header>
 
     <main>
+        <h1>User: {{door_state['id']}}</h1>
         <section class="toggle-door">
-            <h2>Door Status: {{ 'Unlocked' if door_unlocked else 'Locked' }}</h2>
+            
+            <h2>Door Status: {{ 'Unlocked' if door_state['door_unlocked'] else 'Locked' }} 
+                and {{ 'Open' if door_state['door_open'] else 'Closed' }}
+            </h2>
             <form action="{{ url_for('toggle') }}" method="post">
-                <button type="submit">{{ 'Lock Door' if door_unlocked else 'Unlock Door' }}</button>
+                <button type="submit">{{ 'Lock Door' if door_state['door_unlocked'] else 'Unlock Door' }}</button>
             </form>
         </section>
 
         <section id="memo">
-            <h2>Voice Memos</h2>
+            <h2>Voice Memos(mongodb)</h2>
             <div>
-                <div>{{ csv_html|safe }}</div>
+                {% for memo in memos %}
+                    <div>
+                        {{memo}}
+                    </div>
+                {% endfor %}
             </div>
         </section>
 
         <section id="faces">
-            <h2>Received Faces</h2>
+            <h2>Received Faces(mongodb)</h2>
             <div class="faces-gallery">
-                {% for face in recvd_faces_paths %}
+                {% for photo in visitor_photos %}
                     <div class="face-item">
-                        <img src="{{ url_for('static', filename='recvd_faces/' + face) }}" alt="Received Face">
+                        <img src="data:image/png;base64,{{photo['data']}}" alt="{{photo['timestamp']}}">
+                        <div class="caption">
+                            <p>{{photo["timestamp"]}}</p>
+                        </div>
                     </div>
                 {% endfor %}
             </div>

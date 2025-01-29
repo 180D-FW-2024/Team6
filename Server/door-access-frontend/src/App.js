@@ -89,16 +89,22 @@ function Dashboard() {
       </ul>
 
       <h2>Visitors</h2>
-      {visitors.length > 0 ? (
-        visitors.map((visitor, index) => (
-          <div key={index}>
-            <img src={`data:image/jpeg;base64,${visitor.data}`} alt={`Visitor ${index}`} />
-            <p>{visitor.timestamp}</p>
-          </div>
-        ))
-      ) : (
-        <p>No visitors found.</p>
-      )}
+      <div class="faces-gallery">
+            {visitors.length > 0 ? (
+              visitors.map((photo) => (
+                <div class="face-item">
+                <img src={"data:image/png;base64,"+photo['data']} alt={photo['timestamp']}/>
+                <div class="caption">
+                    <p>{photo["timestamp"]}</p>
+                </div>
+            </div>
+
+              ))
+            ) : (
+              <p>No visitors (or unknown user).</p>
+            )}
+
+        </div>
     </div>
   );
 }
