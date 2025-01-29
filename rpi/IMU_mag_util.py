@@ -15,7 +15,9 @@ import time
 import datetime
 import math
 
-bus = smbus.SMBus(1) # for I2C
+# For i2c with HW: use bus 1 (unreliable b/c of magnetometer clock stretching?)
+# For i2c in SW(using overlay): use bus 3
+bus = smbus.SMBus(3) 
 
 # magnetometer registers
 LIS3MDL_ADDRESS     = 0x1C
@@ -33,8 +35,8 @@ LIS3MDL_OUT_Z_H     = 0x2D
 
 RAD_TO_DEG = 57.29578
 M_PI = 3.14159265358979323846
-MAG_LPF_FACTOR = 0.4    # Low pass filter constant magnetometer
-MAG_MEDIANTABLESIZE = 9         # Median filter table size for magnetometer. Higher = smoother but a longer delay
+MAG_LPF_FACTOR = 0.4        # Low pass filter constant magnetometer
+MAG_MEDIANTABLESIZE = 9     # Median filter table size for magnetometer. Higher = smoother but a longer delay
 
 
 # for calibration -- run calibrate() and open the door fully
@@ -46,19 +48,16 @@ magYmax =  -32767
 magZmax =  -32767
 
 
-
-
 def detectIMU():
     try:
         #Check for BerryIMUv3 (LIS3MDL(magnetometer) only)
         #If no LSM6DSL or LIS3MDL is connected, there will be an I2C bus error and the program will exit.
         LIS3MDL_WHO_AM_I_response = (bus.read_byte_data(LIS3MDL_ADDRESS, LIS3MDL_WHO_AM_I))
-
     except IOError as f:
         print('IMU not detected')
         sys.exit()
     else:
-        if (LIS3MDL_WHO_AM_I_response == 0x6A):
+        if (LIS3MDL_WHO_AM_I_response == 0x3D):
             print("Found BerryIMUv3 (LIS3MDL)")
     time.sleep(1)
 
@@ -92,15 +91,12 @@ def readByte(device_address,register):
 # Initialize magnetometer and interrupt detection
 def initIMU():
     # refer to spec sheet about control registers
-    # all are currently on "high performance"
-
     #initialise the magnetometer
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG1, 0b01011100)         # High performance, ODR 80 Hz, FAST ODR disabled and Selft test disabled.
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG2, 0b00100000)         # +/- 8 gauss
     writeByte(LIS3MDL_ADDRESS,LIS3MDL_CTRL_REG3, 0b00000000)         # Continuous-conversion mode
 
-
-
+# Determine range of mag values for each axis over the range of motion
 def calibrateIMU():
     global magXmin, magXmax, magYmin, magYmax, magZmin, magZmax
     rawmagXmin =  32767
@@ -109,15 +105,19 @@ def calibrateIMU():
     rawmagXmax =  -32767
     rawmagYmax =  -32767
     rawmagZmax =  -32767
-    print('Open the door as far as possible over ten seconds.')
+    print('Open the door as far as possible over five seconds.')
     start = datetime.datetime.now()
-    while (datetime.datetime.now() - start).seconds < 10:
-        rawmagXmin = min(rawmagXmin, readMAGx())
-        rawmagYmin = min(rawmagYmin, readMAGy())
-        rawmagZmin = min(rawmagZmin, readMAGz())
-        rawmagXmax = max(rawmagXmax, readMAGx())
-        rawmagYmax = max(rawmagYmax, readMAGy())
-        rawmagZmax = max(rawmagZmax, readMAGz())
+    while (datetime.datetime.now() - start).seconds < 5:
+        magX = readMAGx()
+        magY = readMAGy()
+        magZ = readMAGz()
+        rawmagXmin = min(rawmagXmin, magX)
+        rawmagYmin = min(rawmagYmin, magY)
+        rawmagZmin = min(rawmagZmin, magZ)
+        rawmagXmax = max(rawmagXmax, magX)
+        rawmagYmax = max(rawmagYmax, magY)
+        rawmagZmax = max(rawmagZmax, magZ)
+        # time.sleep(0.25 /1e6) # ** not sure if necessary
     magXmax = rawmagXmax
     magYmax = rawmagYmax
     magZmax = rawmagZmax
@@ -142,7 +142,7 @@ def getHeading(samples):
     oldYMagRawValue = 0
     oldZMagRawValue = 0
     
-    headings = samples * [0]
+    headings = (samples - MAG_MEDIANTABLESIZE) * [0]
     for i in range (0, samples):
         MAGx = readMAGx()
         MAGy = readMAGy()
@@ -200,8 +200,9 @@ def getHeading(samples):
         if heading < 0:
             heading += 360
         
-        headings[i] = heading
+        if i>=MAG_MEDIANTABLESIZE:
+            headings[i-MAG_MEDIANTABLESIZE] = heading
 
     # return median heading
     headings.sort()
-    return headings[samples//2]
+    return headings[(samples - MAG_MEDIANTABLESIZE)//2]

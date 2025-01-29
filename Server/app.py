@@ -21,7 +21,7 @@ KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
 CSV_FILE = "voice_memos.csv"
 
-DEFAULT_LOCK_ID = "2"
+DEFAULT_LOCK_ID = "1"
 
 
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
