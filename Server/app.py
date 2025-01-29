@@ -21,7 +21,7 @@ KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
 CSV_FILE = "voice_memos.csv"
 
-DEFAULT_LOCK_ID = "1"
+DEFAULT_LOCK_ID = "2"
 
 
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
@@ -87,13 +87,13 @@ def door_status():
 @app.route('/api/voice_memos', methods=['GET'])
 def voice_memos():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
-    return db.getMemos(lock_id)
+    return jsonify(db.getMemos(lock_id))
 
 # Sample route to get visitor images as base64 strings
 @app.route('/api/visitors', methods=['GET'])
 def visitors():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
-    return db.getVisitors(lock_id)
+    return jsonify(db.getVisitors(lock_id))
 
 
 # Toggle lock status

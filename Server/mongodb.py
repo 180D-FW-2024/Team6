@@ -59,7 +59,10 @@ def toggleLock(lock_id):
 
 # Return cursor of memos for a given id
 def getMemos(lock_id):
-    memos = db.Memos.find({"lock_id" : lock_id})
+    cursor = db.Memos.find({"lock_id" : lock_id})
+    memos = []
+    for memo in cursor:
+        memos.append({"timestamp" : memo['timestamp'], "data": memo['data']})
     return memos
 
 def addMemo(lock_id, memo, timestamp = None):
