@@ -2,4 +2,4 @@
 *.png
 voice_memos.csv
 *~
-__pycache__
+__pycache__/
