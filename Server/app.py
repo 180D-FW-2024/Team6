@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, make_response
 from flask_cors import CORS
 import cv2
 import numpy as np
@@ -9,22 +9,28 @@ import io
 import pandas as pd
 import datetime
 
-app = Flask(__name__, static_url_path='/static')
-CORS(app)
+import mongodb as db
+import bcrypt
+
+
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
 
 # Folder where known faces are stored, each subdirectory is a person
 KNOWN_FACES_DIR = './static/known_faces'
 RECVD_FACES_DIR = './static/recvd_faces'
 CSV_FILE = "voice_memos.csv"
 
+DEFAULT_LOCK_ID = "1"
+
+
 face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+db.initDB()
+
 label_map = {}
 current_label = 0
 training_data = []
 labels = []
-
-door_unlocked = True
-door_open = True
 
 # Ensure required directory and file exist
 if not os.path.exists(KNOWN_FACES_DIR):
@@ -74,79 +80,85 @@ if training_data:
 @app.route('/api/door_status', methods=['GET'])
 def door_status():
     # Return current door status
-    return jsonify({"door_unlocked": door_unlocked, "door_open": door_open})
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return jsonify(db.getDoorState(lock_id))
 
 # Sample route to get voice memos
 @app.route('/api/voice_memos', methods=['GET'])
 def voice_memos():
-    try:
-        df = pd.read_csv("voice_memos.csv")
-        memos = df.to_dict(orient="records")  # Convert DataFrame to list of dicts
-        return jsonify(memos)
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return db.getMemos(lock_id)
+
+# Sample route to get visitor images as base64 strings
+@app.route('/api/visitors', methods=['GET'])
+def visitors():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return db.getVisitors(lock_id)
 
 
+# Toggle lock status
 @app.route("/toggle", methods=["POST"])
 def toggle():
-    global door_unlocked
-    # Toggle the door_unlocked variable
-    door_unlocked = not door_unlocked
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    db.toggleLock(lock_id)
     return redirect(url_for("display"))
-
-
-
 
 @app.route("/")
 def display():
-    global door_unlocked, door_open
-    # Load CSV data
-    try:
-        df = pd.read_csv("voice_memos.csv")
-        csv_html = df.to_html(index=False, classes="table table-striped")
-    except FileNotFoundError:
-        csv_html = "<p>No voice_memos.csv file found.</p>"
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    # Load memos
+    memos = db.getMemos(lock_id)
 
     # Load image data
-    recvd_faces_paths = os.listdir(RECVD_FACES_DIR)
-    
+    visitor_photos = db.getVisitors(lock_id)
+
+    # Load door status
+    state = db.getDoorState(lock_id)
+
     # Render the page
-    return render_template("index.html", door_unlocked=door_unlocked, door_open=door_open, csv_html=csv_html,
-        recvd_faces_paths=recvd_faces_paths)
+    return render_template("index.html", door_state=state, memos=memos, 
+                           visitor_photos=visitor_photos)
 
 
 @app.route('/receive', methods=['POST'])
 def receive_image():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
+        return jsonify({'error': 'No image provided'}), 302
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)
     image = cv2.imdecode(img_np, cv2.IMREAD_GRAYSCALE)
 
-    # Also save the image
+    # Save the image locally and in the DB
     cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
+    db.addVisitor(lock_id, image, None)
 
-    # faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
-    # if len(faces) == 0:
-    #     return jsonify({'error': 'No face detected'}), 400
-    
-    # Integrate face recognition later:
+    faces = face_cascade.detectMultiScale(image, scaleFactor=1.1, minNeighbors=5)
+    if len(faces) == 0:
+        return jsonify({'error': 'No face detected'}), 300
 
-    # x, y, w, h = faces[0]
-    # face_to_recognize = image[y:y + h, x:x + w]
+    x, y, w, h = faces[0]
+    face_to_recognize = image[y:y + h, x:x + w]
 
-    # face_to_recognize = image
-    # label, confidence = face_recognizer.predict(face_to_recognize)
-    # if confidence < 100:  # Adjust threshold based on your needs
-    #     matched_name = label_map.get(label, "Unknown")
-    #     return jsonify({'name': matched_name, 'confidence': confidence})
-    # else:
-    #     return jsonify({'name': 'Unknown', 'confidence': confidence})
-    return '', 200 ###
+    face_to_recognize = image
+    label, confidence = face_recognizer.predict(face_to_recognize)
+
+    if confidence < 80:  # Face recognized (want confidence beneath threshold)
+        matched_name = label_map.get(label, "Unknown")
+        db.unlockDoor(lock_id)
+        print(confidence)
+        print(matched_name)
+        
+        return jsonify({'name': matched_name, 'confidence': confidence})
+    else:
+        print("nobody")
+        print(confidence)
+        return '', 301
     
 @app.route('/receiveaudio', methods=['POST'])    
 def receive_audio():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'audio' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
 
@@ -173,25 +185,73 @@ def receive_audio():
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(CSV_FILE, 'a') as f:
             f.write(f"{timestamp}, {text}\n")
+        db.addMemo(lock_id, text, timestamp)
         return jsonify({'transcription': text})
     except sr.UnknownValueError:
         return jsonify({'error': 'Could not understand audio'}), 400
     except sr.RequestError:
         return jsonify({'error': 'Could not request results from the speech recognition service'}), 500
 
-# From Rpi
+# From Rpi: receive current door position
 @app.route('/receiveposition', methods=['POST'])
 def receive_open():
-    global door_open
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     state = request.form['position']
-    # print(request.form)
-    door_open = (state == 'unlocked')
+    db.setOpenState(lock_id, state == 'open')
     return '', 200
 
+# To Rpi: reply with lock status
 @app.route("/getunlocked", methods=["GET"])
 def get_unlocked():
-    global door_unlocked
-    return jsonify({'door_unlocked': door_unlocked})
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    state = db.getDoorState(lock_id)
+    return jsonify({'door_unlocked': state['door_unlocked']})
+
+@app.route('/login', methods=['POST'])
+def login():
+    print(request.headers)  # Debugging: Print request headers
+    print(request.get_data())  # Debugging: Print raw request data
+
+    data = request.json  # Use request.json instead of request.form
+    print(f"Received data: {data}")  # Debugging: Print parsed data
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+
+    if db.verifyLock(username, password):
+        print(f"Successful login for username: {username}")
+        resp = make_response(redirect(url_for('dashboard')))
+        resp.set_cookie('username', username, httponly=True, samesite='Lax')  # Fix: Set the cookie properly
+        return resp
+    else:
+        print(f"Invalid login attempt for username: {username}")
+        return jsonify({"error": "Invalid username or password"}), 401
+
+
+
+    
+@app.route('/dashboard')
+def dashboard():
+    username = request.cookies.get('username')  # Get username from cookies
+    print("Received username from cookie:", username)
+
+    if not username:
+        return redirect(url_for('login'))  # Redirect to login if no user is found
+
+    # Fetch door status, voice memos, and visitor data
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    door_status = db.getDoorState(lock_id) or {}
+    voice_memos = db.getMemos(lock_id) or []
+    visitors = db.getVisitors(lock_id) or []
+
+    return render_template("dashboard.html", 
+                           door_status=door_status, 
+                           voice_memos=voice_memos, 
+                           visitors=visitors)
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

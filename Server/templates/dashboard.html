@@ -1,0 +1,36 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+    <div>
+        <h2>Door Status</h2>
+        <p>Door Unlocked: {{ door_status.door_unlocked }}</p>
+        <p>Door Open: {{ door_status.door_open }}</p>
+    </div>
+
+    <div>
+        <h2>Voice Memos</h2>
+        <ul>
+            {% for memo in voice_memos %}
+                <li>{{ memo['timestamp'] }} - {{ memo['data'] }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h2>Visitors</h2>
+        {% for visitor in visitors %}
+            <div>
+                <img src="data:image/png;base64,{{ visitor['data'] }}" alt="Visitor Image">
+                <p>{{ visitor['timestamp'] }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
