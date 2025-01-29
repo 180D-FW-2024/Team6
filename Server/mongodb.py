@@ -47,6 +47,10 @@ def getDoorState(lock_id):
     return {'id': -1 if state is None else lock_id,
             'door_open' : state['door_open'], 'door_unlocked' : state['door_unlocked']}
 
+def getLockid(username):
+    lock = db.Locks.find_one({"name" : username})
+    return lock['id']
+
 def setOpenState(lock_id, door_open):
     db.Locks.update_one({"id": lock_id}, {"$set": {"door_open": door_open}})
 

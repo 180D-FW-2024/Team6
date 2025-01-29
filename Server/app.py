@@ -218,13 +218,17 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
+    # print("ccokies:" )
+    # print(request.cookies)
+
     if not username or not password:
         return jsonify({"error": "Username and password required"}), 400
 
     if db.verifyLock(username, password):
         print(f"Successful login for username: {username}")
         resp = make_response(redirect(url_for('dashboard')))
-        resp.set_cookie('username', username, httponly=True, samesite='Lax')  # Fix: Set the cookie properly
+        resp.set_cookie('username', username, httponly=True, samesite='Lax')
+        resp.set_cookie('lock_id', str(db.getLockid(username)), httponly=True, samesite='Lax')
         return resp
     else:
         print(f"Invalid login attempt for username: {username}")

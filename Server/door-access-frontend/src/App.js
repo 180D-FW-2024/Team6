@@ -16,6 +16,7 @@ function Login({ onLoginSuccess }) {
     )
     .then(response => {
       onLoginSuccess();
+
     })
     .catch(error => {
       console.error('Login error:', error);
@@ -55,15 +56,21 @@ function Dashboard() {
 
   useEffect(() => {
     // Fetch door status, voice memos, and visitors after login
-    axios.get('http://localhost:5002/api/door_status')
+    axios.get('http://localhost:5002/api/door_status', {
+      withCredentials: true
+    })
       .then(response => setDoorStatus(response.data))
       .catch(error => console.error(error));
 
-    axios.get('http://localhost:5002/api/voice_memos')
+    axios.get('http://localhost:5002/api/voice_memos', {
+      withCredentials: true
+    })
       .then(response => setVoiceMemos(response.data))
       .catch(error => console.error(error));
 
-    axios.get('http://localhost:5002/api/visitors')
+    axios.get('http://localhost:5002/api/visitors', {
+      withCredentials: true
+    })
       .then(response => setVisitors(response.data))
       .catch(error => console.error(error));
   }, []);
