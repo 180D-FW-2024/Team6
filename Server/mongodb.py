@@ -38,6 +38,14 @@ def verifyLock(username, password):
         return False
     return lock['password'] == password
 
+def addLock(username, password, lock_id):
+    lock = db.Locks.find_one({"name" : username})
+    if lock is not None:
+        print("User already exists")
+        return False
+    db.Locks.insert_one({"name" : username, "password" : password, "id" : lock_id, "door_open" : False, "door_unlocked" : False})
+    return True
+
 # Return door open and unlocked status for given id
 def getDoorState(lock_id):
     state = db.Locks.find_one({"id" : lock_id}) 

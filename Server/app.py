@@ -233,8 +233,37 @@ def login():
     else:
         print(f"Invalid login attempt for username: {username}")
         return jsonify({"error": "Invalid username or password"}), 401
+    
+@app.route('/check_login', methods=['GET'])
+def check_login():
+    username = request.cookies.get('username')
+    if username:
+        return jsonify({"logged_in": True, "username": username})
+    else:
+        return jsonify({"logged_in": False}), 401
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    resp = jsonify({"message": "Logged out successfully"})
+    resp.set_cookie('username', '', expires=0)  # Clears the cookie
+    return resp
 
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    id = data.get('id')
+
+    if not username or not password or not id:
+        return jsonify({"error": "Username and password required"}), 400
+
+    if db.addLock(username, password, int(id)):
+        print(f"Successfully signed up for username: {username}")
+        return jsonify({"message": "User created successfully"}), 201
+    else:
+        print(f"Failed to sign up for username: {username}")
+        return jsonify({"error": "User already exists"}), 409
 
     
 @app.route('/dashboard')
@@ -255,6 +284,8 @@ def dashboard():
                            door_status=door_status, 
                            voice_memos=voice_memos, 
                            visitors=visitors)
+
+
 
 
 if __name__ == '__main__':
