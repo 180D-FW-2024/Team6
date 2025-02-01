@@ -53,6 +53,9 @@ function Dashboard() {
   const [doorStatus, setDoorStatus] = useState(null);
   const [voiceMemos, setVoiceMemos] = useState([]);
   const [visitors, setVisitors] = useState([]);
+  
+  const [selectedPhotos, setSelectedPhotos] = useState([]); //hold array of photo object ids to manipulate
+  const [photoStates, setPhotoStates] = useState({}); //hold selected state of each photo (dict)
 
   useEffect(() => {
     // Fetch door status, voice memos, and visitors after login
@@ -75,6 +78,49 @@ function Dashboard() {
       .catch(error => console.error(error));
   }, []);
 
+  //print currently selected photos (just for debugging purposes)
+  useEffect(()=> {
+    console.log(selectedPhotos)
+  }, [selectedPhotos])
+
+  //clear/init selected state when visitor images are updated
+  useEffect(()=>{
+    var photoStateDict = {}
+    for(let i =0; i<visitors.length; i++){
+      photoStateDict[visitors[i]['id']] = false
+    }
+    setPhotoStates(photoStateDict)
+    setSelectedPhotos([])
+  }, [visitors])
+
+  const handlePhotoSelect = (photo_id) => {
+    //toggle select state
+    if (!photoStates[photo_id]){
+      //add id to selected photos
+      setSelectedPhotos([...selectedPhotos, photo_id]);
+    }else{
+      //remove id from selected photos
+      setSelectedPhotos(selectedPhotos.filter(a => a!== photo_id));
+    }
+    //update photo states
+    let prevState = photoStates[photo_id]
+    setPhotoStates({...photoStates, [photo_id] : !prevState})
+    // console.log("new state: " +  JSON.stringify(photoStates))
+  };
+
+  //Delete selected photos and rerender remaining visitor photos
+  const deleteSelectedPhotos = () => {
+    axios.delete('http://localhost:5002/api/delete_photos', 
+      {data: selectedPhotos}, 
+      {withCredentials: true }
+    )
+    .then(response => setVisitors(response.data)) //returns updated photos
+    .catch(error => {
+      console.error('Deleting photos error:', error);
+    });
+   
+  }
+
   return (
     <div className="dashboard">
       <h1>Welcome to the Dashboard</h1>
@@ -96,24 +142,36 @@ function Dashboard() {
       </ul>
 
       <h2>Visitors</h2>
+      <p>{selectedPhotos.length} photos selected</p>
+      <button onClick={deleteSelectedPhotos}>Delete selected photos from DB</button>
       <div class="faces-gallery">
             {visitors.length > 0 ? (
-              visitors.map((photo) => (
-                <div class="face-item">
-                <img src={"data:image/png;base64,"+photo['data']} alt={photo['timestamp']}/>
-                <div class="caption">
-                    <p>{photo["timestamp"]}</p>
-                </div>
-            </div>
-
+              visitors.map((photo, index) => (
+                <Photo photo={photo} onClick={handlePhotoSelect} selectState={photoStates[photo[['id']]]} key={index}/>
               ))
             ) : (
               <p>No visitors (or unknown user).</p>
             )}
-
         </div>
     </div>
   );
+}
+
+//Visitor photo component
+function Photo({ photo, onClick, selectState}){
+  // const [selected, setSelected] = useState(false);
+  // const handleClick = () => {
+  //   setSelected(!selected);
+  // };
+  // useEffect(() => {
+  //   // callback to add photo id to selectedPhotos
+  //   onClick(photo['id'], selected);
+  // }, [selected]);
+  return (
+    <div class="face-item" onClick={() => {onClick(photo['id']);}} style={{border: `3px solid ${selectState? "#6CDF80" : "white"}`}}>
+        <img src={"data:image/png;base64,"+photo['data']} alt={photo['timestamp']}/>
+        <p>{photo["timestamp"]}</p>
+    </div>);
 }
 
 function Signup({ onSignupSuccess }) {

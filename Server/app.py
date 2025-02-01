@@ -95,6 +95,15 @@ def visitors():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     return jsonify(db.getVisitors(lock_id))
 
+# Delete the photos with the specified photo ids
+# and return the remaining photos
+@app.route('/api/delete_photos', methods=['DELETE'])
+def delete_photos():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    # print(request.json)
+    db.deleteVisitors(request.json)
+    return jsonify(db.getVisitors(lock_id))
+
 
 # Toggle lock status
 @app.route("/toggle", methods=["POST"])
@@ -264,7 +273,6 @@ def signup():
     else:
         print(f"Failed to sign up for username: {username}")
         return jsonify({"error": "User already exists"}), 409
-
     
 @app.route('/dashboard')
 def dashboard():
@@ -284,8 +292,6 @@ def dashboard():
                            door_status=door_status, 
                            voice_memos=voice_memos, 
                            visitors=visitors)
-
-
 
 
 if __name__ == '__main__':

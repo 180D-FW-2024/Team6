@@ -1,6 +1,9 @@
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from base64 import b64encode
+from bson import json_util
+from bson import ObjectId
+import json
 import time
 import datetime
 import cv2
@@ -90,7 +93,8 @@ def getVisitors(lock_id):
     # photo['title'] = b64encode(...) does not work, so create separate array
     photoArray = []
     for photo in photos:
-        photoArray.append({"timestamp" : photo['timestamp'], "data" : b64encode(photo['data']).decode('utf-8')})
+        photoArray.append({"timestamp" : photo['timestamp'], "data" : b64encode(photo['data']).decode('utf-8'),
+                           "id" : json.loads(json_util.dumps(photo['_id']))["$oid"]})
     return photoArray
 
 # Add a photo taken by some user's camera
@@ -103,6 +107,7 @@ def addVisitor(lock_id, img, timestamp = None):
     image_bytes = cv2.imencode('.jpg', img)[1].tobytes() # convert to byte string
     db.Visitors.insert_one({"timestamp" : timestamp, 'data' : image_bytes, "lock_id" : lock_id})
 
-
-
+# Delete visitor images with the given object ids
+def deleteVisitors(ids):
+    db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
 
