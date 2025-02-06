@@ -8,6 +8,11 @@ To run server:
 
     create voice_memos.csv file
 
+
+    python3 -m venv myenv
+        source myenv/bin/activate
+
+
     run pip install -r requirements.txt
 
     run 
