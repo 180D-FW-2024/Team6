@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Box } from "@chakra-ui/react";
 import Navbar from "./components_temp/Navbar";
 import Login from "./components_temp/Login";
@@ -7,14 +8,39 @@ import LandingPage from "./components_temp/LandingPage";
 import Dashboard from "./components_temp/Dashboard";
 import ProductPage from "./components_temp/ProductPage";
 import AboutUsPage from "./components_temp/AboutUsPage";
+import SettingsPage from "./components_temp/SettingsPage";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("landing");
+  const [userName, setUserName] = useState(""); // Dynamically set username
+
+  // Check login status on app load
+  useEffect(() => {
+    axios
+      .get("http://localhost:5002/check_login", { withCredentials: true })
+      .then((response) => {
+        if (response.data.logged_in) {
+          setIsLoggedIn(true);
+          setUserName(response.data.username);
+          setCurrentPage("dashboard");
+        }
+      })
+      .catch(() => {
+        // User is not logged in
+        setIsLoggedIn(false);
+        setUserName("");
+      });
+  }, []);
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentPage("landing");
+    axios
+      .post("http://localhost:5002/logout", {}, { withCredentials: true })
+      .then(() => {
+        setIsLoggedIn(false);
+        setUserName("");
+        setCurrentPage("landing");
+      });
   };
 
   return (
@@ -22,15 +48,17 @@ function App() {
       <Navbar
         isLandingPage={currentPage === "landing"}
         isLoggedIn={isLoggedIn}
+        userName={userName}
         onLogout={handleLogout}
         onNavigateHome={() => setCurrentPage("landing")}
         onNavigateDashboard={() => setCurrentPage("dashboard")}
+        onNavigateSettings={() => setCurrentPage("settings")}
         onNavigateVoiceMemos={() => setCurrentPage("voiceMemos")}
         onNavigateVisitors={() => setCurrentPage("visitors")}
-        onNavigateProduct={() => setCurrentPage("product")}
-        onNavigateAbout={() => setCurrentPage("about")}
         onLoginClick={() => setCurrentPage("login")}
         onSignupClick={() => setCurrentPage("signup")}
+        onNavigateProduct={() => setCurrentPage("product")}
+        onNavigateAbout={() => setCurrentPage("about")}
       />
 
       {/* Page Rendering */}
@@ -42,8 +70,9 @@ function App() {
       )}
       {currentPage === "login" && (
         <Login
-          onLoginSuccess={() => {
+          onLoginSuccess={(username) => {
             setIsLoggedIn(true);
+            setUserName(username); // Set username from API response
             setCurrentPage("dashboard");
           }}
           onGoBack={() => setCurrentPage("landing")}
@@ -60,6 +89,7 @@ function App() {
       {currentPage === "visitors" && <div>Visitors Page</div>}
       {currentPage === "product" && <ProductPage />}
       {currentPage === "about" && <AboutUsPage />}
+      {currentPage === "settings" && <SettingsPage />}
     </Box>
   );
 }

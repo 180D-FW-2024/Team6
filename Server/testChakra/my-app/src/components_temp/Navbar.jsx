@@ -1,16 +1,16 @@
 import React from "react";
-import { Flex, Box, Heading, Spacer, Button, HStack, Link } from "@chakra-ui/react";
+import { Flex, Box, Heading, Spacer, Button, HStack, Link, Text } from "@chakra-ui/react";
 
 function Navbar({
   isLandingPage,
   isLoggedIn,
+  userName,
   onLogout,
   onNavigateHome,
   onNavigateDashboard,
+  onNavigateSettings,
   onNavigateVoiceMemos,
   onNavigateVisitors,
-  onNavigateProduct,
-  onNavigateAbout,
   onLoginClick,
   onSignupClick,
 }) {
@@ -54,31 +54,9 @@ function Navbar({
         </HStack>
       )}
 
-      {/* Links for About Us and Product (only on landing page) */}
-      {isLandingPage && (
-        <HStack spacing={6} ml={6}>
-          <Link
-            onClick={onNavigateProduct}
-            color="white"
-            fontWeight="bold"
-            _hover={{ textDecoration: "underline" }}
-          >
-            Product
-          </Link>
-          <Link
-            onClick={onNavigateAbout}
-            color="white"
-            fontWeight="bold"
-            _hover={{ textDecoration: "underline" }}
-          >
-            About Us
-          </Link>
-        </HStack>
-      )}
-
       <Spacer />
 
-      {/* Login/Register or Logout */}
+      {/* Login/Register or Logout with User Name */}
       {isLandingPage ? (
         <HStack spacing={4}>
           <Button
@@ -94,9 +72,20 @@ function Navbar({
           </Button>
         </HStack>
       ) : isLoggedIn ? (
-        <Button colorScheme="red" onClick={onLogout}>
-          Logout
-        </Button>
+        <HStack spacing={4}>
+          <Text
+            as="button"
+            onClick={onNavigateSettings}
+            fontWeight="bold"
+            color="white"
+            _hover={{ textDecoration: "underline", cursor: "pointer" }}
+          >
+            {userName}
+          </Text>
+          <Button colorScheme="red" onClick={onLogout}>
+            Logout
+          </Button>
+        </HStack>
       ) : null}
     </Flex>
   );
