@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, make_response
 from flask_cors import CORS
 import cv2
+from deepface import DeepFace
 import numpy as np
 import speech_recognition as sr
 from pydub import AudioSegment
@@ -43,6 +44,15 @@ if not os.path.exists(CSV_FILE):
     # Create a new CSV file with a basic structure
     pd.DataFrame(columns=["Timestamp", "Memo"]).to_csv(CSV_FILE, index=False)
 
+# Run deepface model once with random image to create a pickle file with the embeddings 
+dfs = DeepFace.find(img_path=np.array([[[255, 0, 0], [0, 255, 0], [0, 0, 0], [0, 0, 0]]]), 
+                    db_path=KNOWN_FACES_DIR,
+                    model_name = "VGG-Face",
+                    detector_backend = 'opencv', # opencv
+                    distance_metric = 'cosine',
+                    enforce_detection=False)
+
+'''
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
 face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
 
@@ -75,6 +85,7 @@ for person_name in os.listdir(KNOWN_FACES_DIR):
 # Train face recognizer
 if training_data:
     face_recognizer.train(training_data, np.array(labels))
+'''
 
 # Sample route to fetch door status
 @app.route('/api/door_status', methods=['GET'])
@@ -128,7 +139,58 @@ def display():
     return render_template("index.html", door_state=state, memos=memos, 
                            visitor_photos=visitor_photos)
 
+# Using DeepFace recognition (VGG-Face)
+@app.route('/receive', methods=['POST'])
+def receive_image():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image provided'}), 302
 
+    file = request.files['image']
+    img_np = np.frombuffer(file.read(), np.uint8)
+    image = cv2.imdecode(img_np, cv2.IMREAD_COLOR) # deepface takes color images (BGR seems to work)
+
+    # Save the image locally and in the DB
+    cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
+    db.addVisitor(lock_id, image, None)
+
+    try:
+        # returns a pandas data frame
+        dfs = DeepFace.find(
+            img_path = image,
+            db_path = KNOWN_FACES_DIR,
+            threshold = 0.55,
+            model_name = 'VGG-Face',
+            detector_backend = 'opencv', # opencv
+            distance_metric = 'cosine',
+            # align = True  # on by default
+            # anti_spoofing = True  #ends up discarding a lot of photos
+        )
+    except ValueError:
+        print("no face detected")
+        return jsonify({'error': 'No face detected'}), 300
+    
+    # no faces matched
+    if len(dfs[0]) == 0:
+        print("Nobody")
+        return '', 301
+    
+    temp = dfs[0].loc[0, :]
+    path, _ = os.path.split(temp['identity'])
+    _, matched_name = os.path.split(path)
+    confidence = temp['distance']
+
+    if confidence > 0.5:
+        print("Not confident enough (%s, %f)" % (matched_name, confidence))
+        return '', 301
+    
+    db.unlockDoor(lock_id)
+    print(confidence)
+    print(matched_name)
+    return jsonify({'name': matched_name, 'confidence': confidence})
+    
+'''
+# Old endpoint using OpenCV face recognition
 @app.route('/receive', methods=['POST'])
 def receive_image():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
@@ -164,6 +226,7 @@ def receive_image():
         print("nobody")
         print(confidence)
         return '', 301
+'''
     
 @app.route('/receiveaudio', methods=['POST'])    
 def receive_audio():

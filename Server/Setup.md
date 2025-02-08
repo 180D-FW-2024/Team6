@@ -15,6 +15,10 @@ To run server:
 
     run pip install -r requirements.txt
 
+    Move the Haar Cascade classifiers to where Deepface can access them
+        cp haarcascade_eye.xml myenv/lib/python<version>/site-packages/data/
+        cp haarcascade_frontalface_default.xml myenv/lib/python<version>/site-packages/data/
+
     run 
         python app.py
 

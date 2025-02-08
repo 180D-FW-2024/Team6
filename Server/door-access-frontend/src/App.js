@@ -5,7 +5,7 @@ import { Box, Button, Heading, Text } from "@chakra-ui/react";
 
 
 
-Login component
+// Login component
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

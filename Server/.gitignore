@@ -1,6 +1,7 @@
 *.jpg
 *.png
 voice_memos.csv
+*.pkl
 *~
 __pycache__/
 myenv/
