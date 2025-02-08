@@ -8,9 +8,15 @@ function Dashboard() {
   const [visitors, setVisitors] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5002/api/door_status").then((response) => setDoorStatus(response.data));
-    axios.get("http://localhost:5002/api/voice_memos").then((response) => setVoiceMemos(response.data));
-    axios.get("http://localhost:5002/api/visitors").then((response) => setVisitors(response.data));
+    axios.get("http://localhost:5002/api/door_status", {
+      withCredentials: true
+    }).then((response) => setDoorStatus(response.data));
+    axios.get("http://localhost:5002/api/voice_memos", {
+      withCredentials: true
+    }).then((response) => setVoiceMemos(response.data));
+    axios.get("http://localhost:5002/api/visitors", {
+      withCredentials: true
+    }).then((response) => setVisitors(response.data));
   }, []);
 
   return (
