@@ -13,7 +13,7 @@ import SettingsPage from "./components_temp/SettingsPage";
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("landing");
-  const [userName, setUserName] = useState(""); // Dynamically set username
+  const [userName, setUserName] = useState(""); // State to hold the username
 
   // Check login status on app load
   useEffect(() => {
@@ -22,7 +22,7 @@ function App() {
       .then((response) => {
         if (response.data.logged_in) {
           setIsLoggedIn(true);
-          setUserName(response.data.username);
+          setUserName(response.data.username); // Update username
           setCurrentPage("dashboard");
         }
       })
@@ -43,22 +43,28 @@ function App() {
       });
   };
 
+  const handleLoginSuccess = (username) => {
+    setIsLoggedIn(true);
+    setUserName(username); // Update username immediately upon login
+    setCurrentPage("dashboard");
+  };
+
   return (
     <Box minH="100vh" bg="brand.beige">
       <Navbar
         isLandingPage={currentPage === "landing"}
         isLoggedIn={isLoggedIn}
-        userName={userName}
+        userName={userName} // Pass username to Navbar
         onLogout={handleLogout}
         onNavigateHome={() => setCurrentPage("landing")}
         onNavigateDashboard={() => setCurrentPage("dashboard")}
         onNavigateSettings={() => setCurrentPage("settings")}
         onNavigateVoiceMemos={() => setCurrentPage("voiceMemos")}
         onNavigateVisitors={() => setCurrentPage("visitors")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
         onNavigateProduct={() => setCurrentPage("product")}
         onNavigateAbout={() => setCurrentPage("about")}
+        onLoginClick={() => setCurrentPage("login")}
+        onSignupClick={() => setCurrentPage("signup")}
       />
 
       {/* Page Rendering */}
@@ -70,11 +76,7 @@ function App() {
       )}
       {currentPage === "login" && (
         <Login
-          onLoginSuccess={(username) => {
-            setIsLoggedIn(true);
-            setUserName(username); // Set username from API response
-            setCurrentPage("dashboard");
-          }}
+          onLoginSuccess={handleLoginSuccess} // Pass success handler
           onGoBack={() => setCurrentPage("landing")}
         />
       )}

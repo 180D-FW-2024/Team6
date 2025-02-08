@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { Box, Button, Input, Heading, Alert, AlertIcon, VStack, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Input,
+  Heading,
+  Alert,
+  AlertIcon,
+  VStack,
+  Text,
+} from "@chakra-ui/react";
 import axios from "axios";
 
 function Login({ onLoginSuccess, onGoBack, onSignupClick }) {
@@ -15,7 +24,10 @@ function Login({ onLoginSuccess, onGoBack, onSignupClick }) {
         { username, password },
         { headers: { "Content-Type": "application/json" }, withCredentials: true }
       )
-      .then(() => onLoginSuccess())
+      .then((response) => {
+        const loggedInUsername = response.data.username; // Expect username from API
+        onLoginSuccess(loggedInUsername); // Pass username to parent component
+      })
       .catch(() => setError("Invalid username or password"));
   };
 
@@ -53,22 +65,29 @@ function Login({ onLoginSuccess, onGoBack, onSignupClick }) {
           onChange={(e) => setPassword(e.target.value)}
           focusBorderColor="brand.aqua"
         />
-        <Button type="submit" bg="brand.aqua" color="white" width="full" _hover={{ bg: "brand.darkBlue" }}>
+        <Button
+          type="submit"
+          bg="brand.aqua"
+          color="white"
+          width="full"
+          _hover={{ bg: "brand.darkBlue" }}
+        >
           Login
         </Button>
       </VStack>
       <Text textAlign="center" mt={4}>
         Don’t have an account?{" "}
-        <Text
-          as="span"
-          color="blue.500"
-          cursor="pointer"
-          onClick={onSignupClick}
-        >
+        <Text as="span" color="blue.500" cursor="pointer" onClick={onSignupClick}>
           Sign Up
         </Text>
       </Text>
-      <Text textAlign="center" mt={2} cursor="pointer" color="blue.500" onClick={onGoBack}>
+      <Text
+        textAlign="center"
+        mt={2}
+        cursor="pointer"
+        color="blue.500"
+        onClick={onGoBack}
+      >
         Go Back to Landing Page
       </Text>
     </Box>
