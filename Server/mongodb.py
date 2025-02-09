@@ -116,10 +116,11 @@ def deleteVisitors(ids):
 def getResidents(lock_id):
     residentArray = []
     residents = db.Residents.aggregate([{"$match" :{ "lock_id" :lock_id}},
-        { "$group" : { "_id" : "$name", "images": { "$push": "$data" } } }
+        { "$group" : { "_id" : "$name", "images": { "$push": {"data":"$data", "_id":"$_id"} } } }
     ]) # SELECT name, Residents.data AS images GROUP BY Residents.name
     for resident in residents:
-        images = [b64encode(img).decode('utf-8') for img in resident['images']]
+        images = [{"data" : b64encode(img['data']).decode('utf-8'), 
+                   "id":json.loads(json_util.dumps(img['_id']))["$oid"]} for img in resident['images']]
         residentArray.append({"name":resident["_id"], "images" : images})
     return residentArray
     

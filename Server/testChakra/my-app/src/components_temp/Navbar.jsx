@@ -58,7 +58,7 @@ function Navbar({
             fontWeight="bold"
             _hover={{ textDecoration: "underline" }}
           >
-            Residents
+            Manage Residents
           </Link>
         </HStack>
       )}
