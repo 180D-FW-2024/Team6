@@ -107,6 +107,12 @@ def delete_photos():
     db.deleteVisitors(request.json)
     return jsonify(db.getVisitors(lock_id))
 
+# Get authorized faces(residents) for this lock id
+@app.route('/api/residents', methods=['GET'])
+def residents():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return jsonify(db.getResidents(lock_id))
+
 
 # Toggle lock status
 @app.route("/toggle", methods=["POST"])
@@ -150,7 +156,7 @@ def receive_image():
         # returns a pandas data frame
         dfs = DeepFace.find(
             img_path = image,
-            db_path = KNOWN_FACES_DIR + "/"+lock_id,
+            db_path = KNOWN_FACES_DIR + "/"+str(lock_id),
             threshold = 0.55,
             model_name = 'VGG-Face',
             detector_backend = 'opencv', # opencv

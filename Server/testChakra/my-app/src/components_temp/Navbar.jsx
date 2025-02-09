@@ -11,6 +11,7 @@ function Navbar({
   onNavigateSettings,
   onNavigateVoiceMemos,
   onNavigateVisitors,
+  onNavigateResidents,
   onLoginClick,
   onSignupClick,
 }) {
@@ -50,6 +51,14 @@ function Navbar({
             _hover={{ textDecoration: "underline" }}
           >
             Visitors
+          </Link>
+          <Link
+            onClick={onNavigateResidents}
+            color="white"
+            fontWeight="bold"
+            _hover={{ textDecoration: "underline" }}
+          >
+            Residents
           </Link>
         </HStack>
       )}

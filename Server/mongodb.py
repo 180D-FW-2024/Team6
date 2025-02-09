@@ -113,6 +113,17 @@ def addVisitor(lock_id, img, timestamp = None):
 def deleteVisitors(ids):
     db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
 
+def getResidents(lock_id):
+    residentArray = []
+    residents = db.Residents.aggregate([{"$match" :{ "lock_id" :lock_id}},
+        { "$group" : { "_id" : "$name", "images": { "$push": "$data" } } }
+    ]) # SELECT name, Residents.data AS images GROUP BY Residents.name
+    for resident in residents:
+        images = [b64encode(img).decode('utf-8') for img in resident['images']]
+        residentArray.append({"name":resident["_id"], "images" : images})
+    return residentArray
+    
+
 
 def uploadKnownFace(lock_id, img, name):
     image_bytes = cv2.imencode('.jpg', img)[1].tobytes() # convert to byte string
