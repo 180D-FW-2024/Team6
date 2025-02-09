@@ -7,6 +7,8 @@ import json
 import time
 import datetime
 import cv2
+import numpy as np
+import os
 
 # Using Mongo DB Atlas
 # Login gmail: locked.in.db@gmail.com
@@ -111,3 +113,18 @@ def addVisitor(lock_id, img, timestamp = None):
 def deleteVisitors(ids):
     db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
 
+
+def uploadKnownFace(lock_id, img, name):
+    image_bytes = cv2.imencode('.jpg', img)[1].tobytes() # convert to byte string
+    db.Residents.insert_one({"lock_id" : lock_id, "data": image_bytes, "name": name})
+
+# Save known faces (residents) locally
+def downloadKnownFaces(lock_id, path):
+    residents = db.Residents.find({"lock_id" : lock_id})
+    for resident in residents:
+        name_path = path + "/"+str(lock_id) + "/" + resident["name"]
+        if not os.path.exists(name_path):
+            os.makedirs(name_path)
+        img_np = np.frombuffer(resident["data"], np.uint8)
+        img = cv2.imdecode(img_np, cv2.IMREAD_COLOR) # deepface uses BGR space
+        cv2.imwrite(name_path + "/" + json.loads(json_util.dumps(resident['_id']))["$oid"] + ".jpg", img)

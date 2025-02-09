@@ -25,7 +25,7 @@ CSV_FILE = "voice_memos.csv"
 DEFAULT_LOCK_ID = "-1"
 
 
-face_recognizer = cv2.face.LBPHFaceRecognizer_create()
+# face_recognizer = cv2.face.LBPHFaceRecognizer_create()
 db.initDB()
 
 label_map = {}
@@ -43,14 +43,6 @@ if not os.path.exists(RECVD_FACES_DIR):
 if not os.path.exists(CSV_FILE):
     # Create a new CSV file with a basic structure
     pd.DataFrame(columns=["Timestamp", "Memo"]).to_csv(CSV_FILE, index=False)
-
-# Run deepface model once with random image to create a pickle file with the embeddings 
-dfs = DeepFace.find(img_path=np.array([[[255, 0, 0], [0, 255, 0], [0, 0, 0], [0, 0, 0]]]), 
-                    db_path=KNOWN_FACES_DIR,
-                    model_name = "VGG-Face",
-                    detector_backend = 'opencv', # opencv
-                    distance_metric = 'cosine',
-                    enforce_detection=False)
 
 '''
 # Load images and labels from subdirectories in KNOWN_FACES_DIR
@@ -148,7 +140,7 @@ def receive_image():
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)
-    image = cv2.imdecode(img_np, cv2.IMREAD_COLOR) # deepface takes color images (BGR seems to work)
+    image = cv2.imdecode(img_np, cv2.IMREAD_COLOR) # deepface uses BGR images
 
     # Save the image locally and in the DB
     cv2.imwrite(RECVD_FACES_DIR + "/" + datetime.datetime.now().strftime("%m-%d-%Y_%H.%M.%S") + ".jpg", image)
@@ -158,11 +150,12 @@ def receive_image():
         # returns a pandas data frame
         dfs = DeepFace.find(
             img_path = image,
-            db_path = KNOWN_FACES_DIR,
+            db_path = KNOWN_FACES_DIR + "/"+lock_id,
             threshold = 0.55,
             model_name = 'VGG-Face',
             detector_backend = 'opencv', # opencv
             distance_metric = 'cosine',
+            enforce_detection=False,
             # align = True  # on by default
             # anti_spoofing = True  #ends up discarding a lot of photos
         )
@@ -298,9 +291,15 @@ def login():
 
     if db.verifyLock(username, password):
         print(f"Successful login for username: {username}")
+        lock_id = db.getLockid(username)
         resp = make_response(redirect(url_for('dashboard')))
         resp.set_cookie('username', username, httponly=True, samesite='Lax')
-        resp.set_cookie('lock_id', str(db.getLockid(username)), httponly=True, samesite='Lax')
+        resp.set_cookie('lock_id', str(lock_id), httponly=True, samesite='Lax')
+        
+        # Load authorized faces(residents) of this lock to local file system
+        print("Fetching resident faces for " + str(lock_id))
+        db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+
         return resp
     else:
         print(f"Invalid login attempt for username: {username}")
@@ -310,6 +309,10 @@ def login():
 def check_login():
     username = request.cookies.get('username')
     if username:
+        # Load authorized faces(residents) of this lock to local file system
+        lock_id = db.getLockid(username)
+        print("Fetching resident faces for " + str(lock_id))
+        db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
         return jsonify({"logged_in": True, "username": username})
     else:
         return jsonify({"logged_in": False}), 401
