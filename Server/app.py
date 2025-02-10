@@ -113,6 +113,36 @@ def residents():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     return jsonify(db.getResidents(lock_id))
 
+# Delete the authorized person's images from this lock_id
+# (Delete method has issues with sending headers...cookies could not be read)
+# Also updates local known_faces
+@app.route('/api/delete_resident', methods=['POST'])
+def delete_resident():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    # Update database
+    name = request.json['name']
+    db.deleteResident(name, lock_id)
+    # Delete local files
+    path = KNOWN_FACES_DIR+"/"+str(lock_id)+"/" + name + "/"
+    for filename in os.listdir(path):
+        os.remove(path + filename)
+    os.rmdir(path)
+    return ''
+
+# Add visitor images to an existing resident of this lock_id
+# or create a new resident with the given name
+# Also updates local known_faces
+@app.route('/api/add_resident', methods=['POST'])
+def addresident():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    name = request.json['newName']
+    image_ids = request.json['image_ids']
+    # Update database
+    db.addResident(lock_id, name, image_ids)
+    # Load new files (overwrite)
+    db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+    return ''
+
 
 # Toggle lock status
 @app.route("/toggle", methods=["POST"])

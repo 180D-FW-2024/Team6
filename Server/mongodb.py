@@ -123,7 +123,19 @@ def getResidents(lock_id):
                    "id":json.loads(json_util.dumps(img['_id']))["$oid"]} for img in resident['images']]
         residentArray.append({"name":resident["_id"], "images" : images})
     return residentArray
-    
+
+# Add a resident with the given visitor image ids
+def addResident(lock_id, name, ids):
+    imgArray = []
+    imgs = db.Visitors.find({"lock_id" : lock_id, "_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+    for img in imgs:
+        imgArray.append({"lock_id" : lock_id, "name" : name, "data": img["data"]})
+    db.Residents.insert_many(imgArray)
+
+
+# Delete resident images of given lock_id with given name
+def deleteResident(name, lock_id):
+    db.Residents.delete_many({"name" : name, "lock_id" : lock_id})
 
 
 def uploadKnownFace(lock_id, img, name):

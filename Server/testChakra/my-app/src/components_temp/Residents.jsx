@@ -19,6 +19,7 @@ function Residents() {
     const [ selected, setSelected] = useState([]);
     const [visitors, setVisitors] = useState([]);
     const [newName, setNewName] = useState("");
+    const [rerender, setRerender] = useState(false);
 
     useEffect(() => {
         axios.get("http://localhost:5002/api/residents", { withCredentials: true })
@@ -27,36 +28,50 @@ function Residents() {
         
         axios.get("http://localhost:5002/api/visitors", { withCredentials: true})
         .then((response) => setVisitors(response.data));
-    }, []);
+    }, [rerender]);
 
+    // Delete resident with specified name
     const handleResidentDelete = (name) => {
-    // TODO
-    console.log("deleting: " + name);
-  };
+        console.log("deleting: " + name);
+        axios.post('http://localhost:5002/api/delete_resident', 
+            {name}, { withCredentials: true }
+        )
+        .then(() => {setRerender(!rerender)})
+        .catch(error => {
+            console.error('Deleting resident error:', error);
+        });
+    };
 
-  const handleResidentAdd = (e) =>{
-    // TODO
-    console.log("adding: " + selected);
-    console.log("with name: " + newName);
+    // Add visitor photos to specified resident
+    const handleResidentAdd = (e) =>{
+        console.log("adding: " + selected);
+        console.log("with name: " + newName);
+        axios.post('http://localhost:5002/api/add_resident', 
+            {newName, image_ids : selected}, { withCredentials: true }
+        )
+        .then(() => {setRerender(!rerender)})
+        .catch(error => {
+            console.error('Adding resident error:', error);
+        });
 
-    onClose(e); 
-    setNewName(""); 
-    setSelected("");
-  }
-  const handleSelect = (added, id) =>{
-    if (added){
-        console.log("selected" + id);
-        //add id to selected photos
-        setSelected([...selected, id]);
-    }else{
-        console.log("deselected" + id);
-        //remove id from selected photos
-        setSelected(selected.filter(a => a!== id));
+        onClose(e); 
+        setNewName(""); 
+        setSelected("");
     }
-  }
-  const handleNameChange = (event) => {
-    setNewName(event.target.value);
-  }
+    const handleSelect = (added, id) =>{
+        if (added){
+            console.log("selected" + id);
+            //add id to selected photos
+            setSelected([...selected, id]);
+        }else{
+            console.log("deselected" + id);
+            //remove id from selected photos
+            setSelected(selected.filter(a => a!== id));
+        }
+    }
+    const handleNameChange = (event) => {
+        setNewName(event.target.value);
+    }
 
   return (
  <Box p={5}>
@@ -92,7 +107,7 @@ function Residents() {
             <Button colorScheme='blue' mr={3} onClick={handleResidentAdd}>
                 Save(To do)
             </Button>
-            <Button colorScheme='red' onClick={() => {setSelected([])}}>Cancel</Button>
+            <Button colorScheme='red' onClick={(e) => {setSelected([]); onClose(e)}}>Cancel</Button>
             </ModalFooter>
         </ModalContent>
         </Modal>
