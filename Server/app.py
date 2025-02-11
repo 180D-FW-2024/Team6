@@ -174,7 +174,10 @@ def receive_image():
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 302
     
-    # TODO: load training data from DB if not already locally saved``
+    # load training data from DB if not already locally saved
+    if not os.path.exists(KNOWN_FACES_DIR +'/' + str(lock_id)):
+        db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)
