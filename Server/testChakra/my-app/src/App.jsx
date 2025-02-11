@@ -9,6 +9,7 @@ import Dashboard from "./components_temp/Dashboard";
 import ProductPage from "./components_temp/ProductPage";
 import AboutUsPage from "./components_temp/AboutUsPage";
 import SettingsPage from "./components_temp/SettingsPage";
+import VoiceMemos from "./components_temp/VoiceMemos";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -87,7 +88,7 @@ function App() {
         />
       )}
       {currentPage === "dashboard" && isLoggedIn && <Dashboard />}
-      {currentPage === "voiceMemos" && <div>Voice Memos Page</div>}
+      {currentPage === "voiceMemos" && <VoiceMemos />}
       {currentPage === "visitors" && <div>Visitors Page</div>}
       {currentPage === "product" && <ProductPage />}
       {currentPage === "about" && <AboutUsPage />}

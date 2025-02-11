@@ -61,11 +61,20 @@ def extractFace(frame):
         shrunk_image,
         scaleFactor=1.2,    # could increase for speed but may miss faces at missed scales
         minNeighbors=5,
-        minSize=(100, 100), # min size of faces in pixels to detect
+        minSize=(200, 200), # min size of faces in pixels to detect
         flags=cv2.CASCADE_SCALE_IMAGE
     )
     for (x,y,w,h) in faces:
-        extracted_faces.append(gray_image[2*y:2*(y+h), 2*x:2*(x+w)])
+        # extracted_faces.append(gray_image[2*y:2*(y+h), 2*x:2*(x+w)])
+        # Deepface has its own detector that will crop the image accordingly
+        # so give it some leeway
+        margin=50
+        lower_y = max(2*y - margin, 0)
+        lower_x = max(2*x - margin, 0)
+        upper_y = min(2*(y+h) + margin, gray_image.shape[0])
+        upper_x = min(2*(x+w) + margin, gray_image.shape[1])
+        extracted_faces.append(gray_image[lower_y:upper_y, lower_x:upper_x])
+        
 
     return extracted_faces, faces
 
@@ -131,7 +140,7 @@ def buttonHandling(channel):
 
 
 if __name__ == '__main__':
-    # GPIO.cleanup()
+    GPIO.cleanup()
 
     # Initialize session
     # should have flask server return a cookie for this guy to set, but figure out later...

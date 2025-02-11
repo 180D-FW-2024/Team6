@@ -8,4 +8,6 @@ pandas==2.2.3
 DateTime==5.5
 flask_cors=5.0.0
 pymongo=4.11
+deepface=0.0.93
+tf-keras=2.18.0
 
