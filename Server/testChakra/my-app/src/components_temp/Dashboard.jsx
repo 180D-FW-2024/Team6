@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Text, Heading, VStack, Image, Grid, Stack } from "@chakra-ui/react";
+import { Box, Text, Heading, VStack, Image, Grid, Stack, Button } from "@chakra-ui/react";
 import axios from "axios";
 
 function Dashboard() {
@@ -19,6 +19,13 @@ function Dashboard() {
     }).then((response) => setVisitors(response.data));
   }, []);
 
+  const handleLockToggle = () => {
+    axios.post("http://localhost:5002/toggle", {'door_unlocked' : !doorStatus.door_unlocked }, {
+      withCredentials: true
+    });
+    setDoorStatus({"door_open" : doorStatus.door_open, "door_unlocked" : !doorStatus.door_unlocked});
+  }
+
   return (
     <VStack spacing={6} p={6} align="stretch">
       <Heading color="brand.darkBlue" textAlign="center">
@@ -26,11 +33,14 @@ function Dashboard() {
       </Heading>
       {doorStatus && (
         <Box p={4} borderWidth="1px" borderRadius="md" boxShadow="md" bg="white">
+          <Button colorScheme="red" onClick={handleLockToggle}>
+            {doorStatus.door_unlocked ? "Lock" : "Unlock"}
+          </Button>
           <Text fontSize="lg">
-            <strong>Door Unlocked:</strong> {doorStatus.door_unlocked ? "Yes" : "No"}
+            <strong>{doorStatus.door_unlocked ? "Door unlocked" : "Door locked"}</strong>
           </Text>
           <Text fontSize="lg">
-            <strong>Door Open:</strong> {doorStatus.door_open ? "Yes" : "No"}
+            <strong>{doorStatus.door_open ? "Door open" : "Door closed"}</strong> 
           </Text>
         </Box>
       )}

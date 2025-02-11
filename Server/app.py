@@ -148,7 +148,7 @@ def addresident():
 @app.route("/toggle", methods=["POST"])
 def toggle():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
-    db.toggleLock(lock_id)
+    db.toggleLock(lock_id, request.json['door_unlocked'])
     return redirect(url_for("display"))
 
 @app.route("/")
@@ -173,6 +173,8 @@ def receive_image():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 302
+    
+    # TODO: load training data from DB if not already locally saved``
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)

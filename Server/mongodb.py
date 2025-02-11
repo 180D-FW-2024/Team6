@@ -70,9 +70,10 @@ def setOpenState(lock_id, door_open):
 def unlockDoor(lock_id):
     db.Locks.update_one({"id": lock_id}, {"$set": {"door_unlocked": True}})
 
-def toggleLock(lock_id):
-    #aggregate operator
-    db.Locks.update_one({"id": lock_id}, [{ "$set": { "door_unlocked": { "$not": "$door_unlocked" } } }])
+def toggleLock(lock_id, door_unlocked):
+    # aggregate operator (does not work)
+    # db.Locks.update_one({"id": lock_id}, [{ "$set": { "door_unlocked": { "$not": "$door_unlocked" } } }])
+     db.Locks.update_one({"id": lock_id}, {"$set": {"door_unlocked": door_unlocked}})
 
 # Return cursor of memos for a given id
 def getMemos(lock_id):
