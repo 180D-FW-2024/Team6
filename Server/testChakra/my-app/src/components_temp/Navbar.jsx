@@ -13,6 +13,7 @@ function Navbar({
   onNavigateVisitors,
   onNavigateProduct,
   onNavigateAbout,
+  onNavigateResidents,
   onLoginClick,
   onSignupClick,
 }) {
@@ -74,6 +75,14 @@ function Navbar({
             _hover={{ textDecoration: "underline" }}
           >
             Visitors
+          </Link>
+          <Link
+            onClick={onNavigateResidents}
+            color="white"
+            fontWeight="bold"
+            _hover={{ textDecoration: "underline" }}
+          >
+            Manage Residents
           </Link>
         </HStack>
       )}

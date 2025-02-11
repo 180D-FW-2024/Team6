@@ -107,12 +107,48 @@ def delete_photos():
     db.deleteVisitors(request.json)
     return jsonify(db.getVisitors(lock_id))
 
+# Get authorized faces(residents) for this lock id
+@app.route('/api/residents', methods=['GET'])
+def residents():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    return jsonify(db.getResidents(lock_id))
+
+# Delete the authorized person's images from this lock_id
+# (Delete method has issues with sending headers...cookies could not be read)
+# Also updates local known_faces
+@app.route('/api/delete_resident', methods=['POST'])
+def delete_resident():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    # Update database
+    name = request.json['name']
+    db.deleteResident(name, lock_id)
+    # Delete local files
+    path = KNOWN_FACES_DIR+"/"+str(lock_id)+"/" + name + "/"
+    for filename in os.listdir(path):
+        os.remove(path + filename)
+    os.rmdir(path)
+    return ''
+
+# Add visitor images to an existing resident of this lock_id
+# or create a new resident with the given name
+# Also updates local known_faces
+@app.route('/api/add_resident', methods=['POST'])
+def addresident():
+    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+    name = request.json['newName']
+    image_ids = request.json['image_ids']
+    # Update database
+    db.addResident(lock_id, name, image_ids)
+    # Load new files (overwrite)
+    db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+    return ''
+
 
 # Toggle lock status
 @app.route("/toggle", methods=["POST"])
 def toggle():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
-    db.toggleLock(lock_id)
+    db.toggleLock(lock_id, request.json['door_unlocked'])
     return redirect(url_for("display"))
 
 @app.route("/")
@@ -137,6 +173,11 @@ def receive_image():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 302
+    
+    # load training data from DB if not already locally saved
+    if not os.path.exists(KNOWN_FACES_DIR +'/' + str(lock_id)):
+        db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+
 
     file = request.files['image']
     img_np = np.frombuffer(file.read(), np.uint8)
@@ -150,7 +191,7 @@ def receive_image():
         # returns a pandas data frame
         dfs = DeepFace.find(
             img_path = image,
-            db_path = KNOWN_FACES_DIR + "/"+lock_id,
+            db_path = KNOWN_FACES_DIR + "/"+str(lock_id),
             threshold = 0.55,
             model_name = 'VGG-Face',
             detector_backend = 'opencv', # opencv

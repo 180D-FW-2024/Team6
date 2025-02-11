@@ -70,9 +70,10 @@ def setOpenState(lock_id, door_open):
 def unlockDoor(lock_id):
     db.Locks.update_one({"id": lock_id}, {"$set": {"door_unlocked": True}})
 
-def toggleLock(lock_id):
-    #aggregate operator
-    db.Locks.update_one({"id": lock_id}, [{ "$set": { "door_unlocked": { "$not": "$door_unlocked" } } }])
+def toggleLock(lock_id, door_unlocked):
+    # aggregate operator (does not work)
+    # db.Locks.update_one({"id": lock_id}, [{ "$set": { "door_unlocked": { "$not": "$door_unlocked" } } }])
+     db.Locks.update_one({"id": lock_id}, {"$set": {"door_unlocked": door_unlocked}})
 
 # Return cursor of memos for a given id
 def getMemos(lock_id):
@@ -112,6 +113,30 @@ def addVisitor(lock_id, img, timestamp = None):
 # Delete visitor images with the given object ids
 def deleteVisitors(ids):
     db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+
+def getResidents(lock_id):
+    residentArray = []
+    residents = db.Residents.aggregate([{"$match" :{ "lock_id" :lock_id}},
+        { "$group" : { "_id" : "$name", "images": { "$push": {"data":"$data", "_id":"$_id"} } } }
+    ]) # SELECT name, Residents.data AS images GROUP BY Residents.name
+    for resident in residents:
+        images = [{"data" : b64encode(img['data']).decode('utf-8'), 
+                   "id":json.loads(json_util.dumps(img['_id']))["$oid"]} for img in resident['images']]
+        residentArray.append({"name":resident["_id"], "images" : images})
+    return residentArray
+
+# Add a resident with the given visitor image ids
+def addResident(lock_id, name, ids):
+    imgArray = []
+    imgs = db.Visitors.find({"lock_id" : lock_id, "_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+    for img in imgs:
+        imgArray.append({"lock_id" : lock_id, "name" : name, "data": img["data"]})
+    db.Residents.insert_many(imgArray)
+
+
+# Delete resident images of given lock_id with given name
+def deleteResident(name, lock_id):
+    db.Residents.delete_many({"name" : name, "lock_id" : lock_id})
 
 
 def uploadKnownFace(lock_id, img, name):

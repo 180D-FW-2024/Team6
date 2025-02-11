@@ -10,6 +10,7 @@ import ProductPage from "./components_temp/ProductPage";
 import AboutUsPage from "./components_temp/AboutUsPage";
 import SettingsPage from "./components_temp/SettingsPage";
 import VoiceMemos from "./components_temp/VoiceMemos";
+import Residents from "./components_temp/Residents";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -62,6 +63,9 @@ function App() {
         onNavigateSettings={() => setCurrentPage("settings")}
         onNavigateVoiceMemos={() => setCurrentPage("voiceMemos")}
         onNavigateVisitors={() => setCurrentPage("visitors")}
+        onNavigateResidents={() => setCurrentPage("residents")}
+        onLoginClick={() => setCurrentPage("login")}
+        onSignupClick={() => setCurrentPage("signup")}
         onNavigateProduct={() => setCurrentPage("product")}
         onNavigateAbout={() => setCurrentPage("about")}
         onLoginClick={() => setCurrentPage("login")}
@@ -89,6 +93,7 @@ function App() {
       )}
       {currentPage === "dashboard" && isLoggedIn && <Dashboard />}
       {currentPage === "voiceMemos" && <VoiceMemos />}
+      {currentPage === "residents" && <Residents />}
       {currentPage === "visitors" && <div>Visitors Page</div>}
       {currentPage === "product" && <ProductPage />}
       {currentPage === "about" && <AboutUsPage />}
