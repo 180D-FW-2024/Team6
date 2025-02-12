@@ -1,36 +1,32 @@
 import React from "react";
-import { Box, Button, Heading, Text, VStack, Image } from "@chakra-ui/react";
+import { Box, Text, Heading, Flex, Button } from "@chakra-ui/react";
+import lockImage from "../assets/images/lock.jpg";
 
-function LandingPage({ onLoginClick, onSignupClick, onNavigateProduct, onNavigateAbout }) {
+function LandingPage() {
   return (
-    <Box textAlign="center" py={10} bg="brand.beige" minH="100vh">
-      {/* Navbar */}
-      <Box>
-        <Heading color="brand.darkBlue">Locked In</Heading>
-      </Box>
-
-      <Box maxW="600px" mx="auto" mb={6}>
-        {/* Replace this with a product image */}
-        <Image
-          src="https://via.placeholder.com/600x300?text=Locked+In+Product+Image"
-          alt="Locked In Product"
-          borderRadius="md"
+      <Flex w="100vw" h="85vh">
+        {/* Left Side - Image */}
+        <Box
+          flex="1"
+          height="100%"
+          backgroundImage={`url(${lockImage})`}
+          backgroundSize="cover"
+          backgroundPosition="top left"
+          backgroundRepeat="no-repeat"
         />
-      </Box>
 
-      <VStack spacing={4} mb={6}>
-        <Text fontSize="xl" fontWeight="bold">
-          Welcome to the future of smart door access.
-        </Text>
-        <Text>- Advanced Facial Recognition</Text>
-        <Text>- Secure Voice Memo Alerts</Text>
-        <Text>- Remote Lock/Unlock</Text>
-      </VStack>
-
-      <Button colorScheme="teal" size="lg" onClick={onNavigateProduct}>
-        Learn More About Our Product
-      </Button>
-    </Box>
+        {/* Right Side - Text Content */}
+        <Box flex="1" display="flex" alignItems="center" justifyContent="center" p="6">
+          <Box maxW="500px">
+            <Heading fontSize="2xl" fontWeight="bold">
+              Same Look, New Sound
+            </Heading>
+            <Text mt={2}>
+              Custom 40mm titanium drivers deliver precise, expansive sound with clearer highs and richer lows so you can hear your favorite songs in a whole new way. Our signature removable magnetic ear pads are easily replaceable and provide serious sound isolation.
+            </Text>
+          </Box>
+        </Box>
+      </Flex>
   );
 }
 

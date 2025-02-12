@@ -1,54 +1,32 @@
 import React from "react";
-import { Box, Heading, Text, Image, VStack, Grid, GridItem } from "@chakra-ui/react";
+import { Box, Text, Heading, Flex } from "@chakra-ui/react";
+import lockImage from "../assets/images/lock.jpg";
 
 function ProductPage() {
   return (
-    <Box textAlign="center" py={10} bg="brand.beige" minH="100vh">
-      <Heading color="brand.darkBlue" mb={6}>
-        Our Product
-      </Heading>
-      <Image
-        src="https://via.placeholder.com/800x400?text=Locked+In+Product+Image"
-        alt="Locked In Product"
-        borderRadius="md"
-        mx="auto"
-        mb={6}
+    <Flex w="100vw" h="85vh">
+      {/* Left Side - Image */}
+      <Box
+        flex="1"
+        height="100%"
+        backgroundImage={`url(${lockImage})`}
+        backgroundSize="cover"
+        backgroundPosition="top left"
+        backgroundRepeat="no-repeat"
       />
-      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6} maxW="800px" mx="auto">
-        <GridItem>
-          <Text fontSize="lg" fontWeight="bold">
-            Advanced Facial Recognition
+
+      {/* Right Side - Text Content */}
+      <Box flex="1" display="flex" alignItems="center" justifyContent="center" p="6">
+        <Box maxW="500px">
+          <Heading fontSize="2xl" fontWeight="bold">
+            Same Look, New Sound
+          </Heading>
+          <Text mt={2}>
+            Custom 40mm titanium drivers deliver precise, expansive sound with clearer highs and richer lows so you can hear your favorite songs in a whole new way. Our signature removable magnetic ear pads are easily replaceable and provide serious sound isolation.
           </Text>
-          <Text>
-            Our system uses cutting-edge facial recognition to ensure that only authorized individuals gain access.
-          </Text>
-        </GridItem>
-        <GridItem>
-          <Text fontSize="lg" fontWeight="bold">
-            Secure Voice Memo Alerts
-          </Text>
-          <Text>
-            Leave secure voice memos for guests or family members that will be available upon unlocking the door.
-          </Text>
-        </GridItem>
-        <GridItem>
-          <Text fontSize="lg" fontWeight="bold">
-            Remote Lock/Unlock
-          </Text>
-          <Text>
-            Control your door remotely using our app, providing ultimate convenience and security.
-          </Text>
-        </GridItem>
-        <GridItem>
-          <Text fontSize="lg" fontWeight="bold">
-            Easy Installation
-          </Text>
-          <Text>
-            Our product is designed for easy installation, making it accessible for everyone.
-          </Text>
-        </GridItem>
-      </Grid>
-    </Box>
+        </Box>
+      </Box>
+    </Flex>
   );
 }
 
