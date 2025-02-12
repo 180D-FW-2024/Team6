@@ -105,7 +105,7 @@ function Residents() {
 
             <ModalFooter>
             <Button colorScheme='blue' mr={3} onClick={handleResidentAdd}>
-                Save(To do)
+                Save
             </Button>
             <Button colorScheme='red' onClick={(e) => {setSelected([]); onClose(e)}}>Cancel</Button>
             </ModalFooter>
@@ -119,7 +119,7 @@ function Residents() {
                     {resident.name}
                 </Heading>
                 <Spacer />
-                <Button colorScheme="red" onClick={() => {handleResidentDelete(resident.name)}}>Delete resident(To do)</Button>
+                <Button colorScheme="red" onClick={() => {handleResidentDelete(resident.name)}}>Delete resident</Button>
             </HStack>
             <Divider p={3}/>
             <Grid templateColumns="repeat(auto-fill, minmax(100px, 1fr))" gap={4}>

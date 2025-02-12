@@ -33,7 +33,7 @@ function App() {
         setIsLoggedIn(false);
         setUserName("");
       });
-  }, []);
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     axios
@@ -68,8 +68,6 @@ function App() {
         onSignupClick={() => setCurrentPage("signup")}
         onNavigateProduct={() => setCurrentPage("product")}
         onNavigateAbout={() => setCurrentPage("about")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
       />
 
       {/* Page Rendering */}
