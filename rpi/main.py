@@ -160,7 +160,7 @@ if __name__ == '__main__':
     GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #pull down 
 
     # GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+
     # GPIO.add_event_detect(BUTTON_PIN, GPIO.RISING, callback=buttonHandling, bouncetime=2000)
 
 
@@ -173,14 +173,32 @@ if __name__ == '__main__':
 
     # Initialize the servo PWM pin
     pwm=GPIO.PWM(SERVO_PIN, 100) # 100hz
-    pwm.start(0)
+    pwm.start(5) # start locked
 
     # Initialize IMU and callibrate closed door position
     IMU.detectIMU()     # Detect if BerryIMU is connected
     IMU.initIMU()       # Initialise the magnetometer
+
+    # On  calibrate: flash twice
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
    
     closedDoorHeading = calibrateDoorPosition()
     print(f"Closed heading: {closedDoorHeading}\n")
+
+    # On  finsih calibration: flash twice
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
 
     doorSamples = 25    # num samples to use to determine door open/not
     checkDoorPeriod = 5    # num seconds to periodically check door position
@@ -211,7 +229,10 @@ if __name__ == '__main__':
         print(faceFiles)
         for faceFile in faceFiles:
             r = session.post(server+'/receive', files={'image': open(faceFile, "rb")})
-            print(r)
+            # print(r)
+            data=r.json()
+            if 'error' in data:
+                buttonHandling(None) # record memo if unknown face
             time.sleep(1) # remove later
 
         # Query server periodically (3 seconds) if door should open or not

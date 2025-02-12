@@ -207,7 +207,7 @@ def receive_image():
     # no faces matched
     if len(dfs[0]) == 0:
         print("Nobody")
-        return '', 301
+        return jsonify({'error': 'Unknown face'}), 301
     
     temp = dfs[0].loc[0, :]
     path, _ = os.path.split(temp['identity'])
@@ -216,7 +216,7 @@ def receive_image():
 
     if confidence > 0.5:
         print("Not confident enough (%s, %f)" % (matched_name, confidence))
-        return '', 301
+        return jsonify({'error': 'Unknown face(not confident enough)'}), 301
     
     db.unlockDoor(lock_id)
     print(confidence)
@@ -353,7 +353,7 @@ def check_login():
         # Load authorized faces(residents) of this lock to local file system
         lock_id = db.getLockid(username)
         print("Fetching resident faces for " + str(lock_id))
-        db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR)
+        # db.downloadKnownFaces(lock_id,KNOWN_FACES_DIR) #only download on login
         return jsonify({"logged_in": True, "username": username})
     else:
         return jsonify({"logged_in": False}), 401
