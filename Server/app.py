@@ -401,5 +401,41 @@ def dashboard():
                            visitors=visitors)
 
 
+@app.route('/update_username', methods=['POST'])
+def update_username():
+    data = request.json
+    old_username = data.get('old_username')
+    new_username = data.get('new_username')
+
+    if not old_username or not new_username:
+        return jsonify({"error": "Both old and new usernames are required"}), 400
+
+    success = db.updateUsername(old_username, new_username)
+    if success:
+        resp = jsonify({"message": "Username updated successfully"})
+        resp.set_cookie('username', new_username, httponly=True, samesite='Lax')  # Update cookie
+        return resp
+    else:
+        return jsonify({"error": "Failed to update username"}), 500
+
+
+@app.route('/update_password', methods=['POST'])
+def update_password():
+    data = request.json
+    username = data.get('username')
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+
+    if not username or not old_password or not new_password:
+        return jsonify({"error": "All fields are required"}), 400
+
+    success = db.updatePassword(username, old_password, new_password)
+    if success:
+        return jsonify({"message": "Password updated successfully"}), 200
+    else:
+        return jsonify({"error": "Failed to update password"}), 401
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

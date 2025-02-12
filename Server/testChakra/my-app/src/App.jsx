@@ -11,6 +11,8 @@ import AboutUsPage from "./components_temp/AboutUsPage";
 import SettingsPage from "./components_temp/SettingsPage";
 import VoiceMemos from "./components_temp/VoiceMemos";
 import Residents from "./components_temp/Residents";
+import Visitors from "./components_temp/Visitors"; 
+
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -33,7 +35,7 @@ function App() {
         setIsLoggedIn(false);
         setUserName("");
       });
-  }, []);
+  }, [isLoggedIn]);
 
   const handleLogout = () => {
     axios
@@ -54,24 +56,22 @@ function App() {
   return (
     <Box minH="100vh" bg="brand.beige">
       <Navbar
-        isLandingPage={currentPage === "landing"}
+        currentPage={currentPage} // Pass currentPage prop to Navbar
+        isLandingPage={currentPage === "landing"} // ONLY landing page gets this
         isLoggedIn={isLoggedIn}
-        userName={userName} // Pass username to Navbar
+        userName={userName}
         onLogout={handleLogout}
-        onNavigateHome={() => setCurrentPage("landing")}
+        onNavigateHome={() => setCurrentPage(isLoggedIn ? "dashboard" : "landing")}
         onNavigateDashboard={() => setCurrentPage("dashboard")}
         onNavigateSettings={() => setCurrentPage("settings")}
         onNavigateVoiceMemos={() => setCurrentPage("voiceMemos")}
         onNavigateVisitors={() => setCurrentPage("visitors")}
         onNavigateResidents={() => setCurrentPage("residents")}
-        onLoginClick={() => setCurrentPage("login")}
-        onSignupClick={() => setCurrentPage("signup")}
         onNavigateProduct={() => setCurrentPage("product")}
         onNavigateAbout={() => setCurrentPage("about")}
         onLoginClick={() => setCurrentPage("login")}
         onSignupClick={() => setCurrentPage("signup")}
       />
-
       {/* Page Rendering */}
       {currentPage === "landing" && (
         <LandingPage
@@ -83,21 +83,25 @@ function App() {
         <Login
           onLoginSuccess={handleLoginSuccess} // Pass success handler
           onGoBack={() => setCurrentPage("landing")}
+          onSignupClick={() => setCurrentPage("signup")} // Fix redirection to signup
         />
       )}
+
       {currentPage === "signup" && (
         <Signup
-          onSignupSuccess={() => setCurrentPage("login")}
+          onSignupSuccess={() => setCurrentPage("login")} // Fix redirection to login
           onGoBack={() => setCurrentPage("landing")}
+          onLoginClick={() => setCurrentPage("login")} // Fix redirection to login
         />
       )}
       {currentPage === "dashboard" && isLoggedIn && <Dashboard />}
       {currentPage === "voiceMemos" && <VoiceMemos />}
       {currentPage === "residents" && <Residents />}
-      {currentPage === "visitors" && <div>Visitors Page</div>}
       {currentPage === "product" && <ProductPage />}
       {currentPage === "about" && <AboutUsPage />}
       {currentPage === "settings" && <SettingsPage />}
+      {currentPage === "visitors" && <Visitors />}
+
     </Box>
   );
 }

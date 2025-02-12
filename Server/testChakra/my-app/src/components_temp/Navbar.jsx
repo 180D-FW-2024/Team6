@@ -16,6 +16,7 @@ function Navbar({
   onNavigateResidents,
   onLoginClick,
   onSignupClick,
+  currentPage,
 }) {
   return (
     <Flex
@@ -24,6 +25,7 @@ function Navbar({
       bg="brand.darkBlue"
       color="white"
       padding="1rem"
+      minHeight="75px" // Set a fixed minimum height
     >
       {/* Logo */}
       <Box
@@ -35,8 +37,8 @@ function Navbar({
         </Heading>
       </Box>
 
-      {/* Links for "About Us" and "Product" (only on Landing Page) */}
-      {isLandingPage && (
+      {/* Links for "About Us" and "Product" (Landing, Product, About pages) */}
+      {(!isLoggedIn || currentPage === "landing" || currentPage === "product" || currentPage === "about") && (
         <HStack spacing={6} ml={6}>
           <Link
             onClick={onNavigateProduct}
@@ -89,40 +91,41 @@ function Navbar({
 
       <Spacer />
 
-      {/* Username and Logout */}
-      {isLoggedIn && (
-        <HStack spacing={4}>
-          <Text
-            as="button"
-            onClick={onNavigateSettings}
-            fontWeight="bold"
-            color="white"
-            _hover={{ textDecoration: "underline", cursor: "pointer" }}
-          >
-            {userName} {/* Display the username here */}
-          </Text>
-          <Button colorScheme="red" onClick={onLogout}>
-            Logout
-          </Button>
-        </HStack>
-      )}
-
-      {/* Login/Register for Landing Page */}
-      {!isLoggedIn && isLandingPage && (
-        <HStack spacing={4}>
-          <Button
-            variant="outline"
-            color="white"
-            borderColor="white"
-            onClick={onLoginClick}
-          >
-            Login
-          </Button>
-          <Button colorScheme="teal" onClick={onSignupClick}>
-            Register
-          </Button>
-        </HStack>
-      )}
+      {/* ✅ Fixed Navbar Width & Buttons Section */}
+      <Box minW="250px" display="flex" justifyContent="flex-end">
+        {isLoggedIn ? (
+          <HStack spacing={4}>
+            <Text
+              as="button"
+              onClick={onNavigateSettings}
+              fontWeight="bold"
+              color="white"
+              _hover={{ textDecoration: "underline", cursor: "pointer" }}
+            >
+              {userName}
+            </Text>
+            <Button colorScheme="red" onClick={onLogout}>
+              Logout
+            </Button>
+          </HStack>
+        ) : (
+          /* ✅ Even when no buttons, this ensures width stays the same */
+          <HStack spacing={4}>
+            {isLandingPage || currentPage === "product" || currentPage === "about" ? (
+              <>
+                <Button variant="outline" color="white" borderColor="white" onClick={onLoginClick}>
+                  Login
+                </Button>
+                <Button colorScheme="teal" onClick={onSignupClick}>
+                  Register
+                </Button>
+              </>
+            ) : (
+              <Box minW="150px" /> // Placeholder for spacing
+            )}
+          </HStack>
+        )}
+      </Box>
     </Flex>
   );
 }
