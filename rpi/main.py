@@ -19,12 +19,14 @@ openThresholdAngle = 10
 server = None
 session = None # used to persist cookie with lock id
 
-SOLENOID_PIN = 23
+# SOLENOID_PIN = 23
+SERVO_PIN = 26
 LED_PIN = 22
 BUTTON_PIN = 27
 
 # Used to clean up when Ctrl-c is pressed
 def signalHandler(sig, frame):
+    pwm.stop()
     GPIO.cleanup()
     print("Exiting... to do some clean up later")
     camera.close()
@@ -152,13 +154,13 @@ if __name__ == '__main__':
 
     # Initialize pins
     GPIO.setmode(GPIO.BCM) # Use physical pin numbering
-
-    GPIO.setup(SOLENOID_PIN, GPIO.OUT)
+    GPIO.setup(SERVO_PIN, GPIO.OUT)
+    # GPIO.setup(SOLENOID_PIN, GPIO.OUT)
     GPIO.setup(LED_PIN, GPIO.OUT)
     GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #pull down 
 
-    GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    # GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
+
     # GPIO.add_event_detect(BUTTON_PIN, GPIO.RISING, callback=buttonHandling, bouncetime=2000)
 
 
@@ -167,15 +169,36 @@ if __name__ == '__main__':
     camera.resolution = (1920, 1080)
     camera.exposure_mode='sports' # supposedly reduces motion blur
     time.sleep(2)   # to adjust inital gain and exposure time (auto-adjusts by default)
-
     face_cascade = cv2.CascadeClassifier('../haarcascade_frontalface_default.xml')
+
+    # Initialize the servo PWM pin
+    pwm=GPIO.PWM(SERVO_PIN, 100) # 100hz
+    pwm.start(5) # start locked
 
     # Initialize IMU and callibrate closed door position
     IMU.detectIMU()     # Detect if BerryIMU is connected
     IMU.initIMU()       # Initialise the magnetometer
+
+    # On  calibrate: flash twice
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
    
     closedDoorHeading = calibrateDoorPosition()
     print(f"Closed heading: {closedDoorHeading}\n")
+
+    # On  finsih calibration: flash twice
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+    time.sleep(0.3)
+    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
 
     doorSamples = 25    # num samples to use to determine door open/not
     checkDoorPeriod = 5    # num seconds to periodically check door position
@@ -206,13 +229,20 @@ if __name__ == '__main__':
         print(faceFiles)
         for faceFile in faceFiles:
             r = session.post(server+'/receive', files={'image': open(faceFile, "rb")})
-            print(r)
+            # print(r)
+            data=r.json()
+            if 'error' in data:
+                buttonHandling(None) # record memo if unknown face
             time.sleep(1) # remove later
 
         # Query server periodically (3 seconds) if door should open or not
         if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
             lastServerCheck = datetime.datetime.now()
-            GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
+            if checkServerUnlock():
+                pwm.ChangeDutyCycle(25) #unlock
+            else:
+                pwm.ChangeDutyCycle(5) #lock
+            # GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
         
         # Check if button pressed (for speech recording)
         state = GPIO.input(BUTTON_PIN)
