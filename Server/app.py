@@ -292,10 +292,13 @@ def receive_audio():
         with open(CSV_FILE, 'a') as f:
             f.write(f"{timestamp}, {text}\n")
         db.addMemo(lock_id, text, timestamp)
+        print("Heard: ", text) # debugging
         return jsonify({'transcription': text})
     except sr.UnknownValueError:
+        print("Could not understand audio") # debugging
         return jsonify({'error': 'Could not understand audio'}), 400
     except sr.RequestError:
+        print("Could not request results from the speech recognition service")  # debugging
         return jsonify({'error': 'Could not request results from the speech recognition service'}), 500
 
 # From Rpi: receive current door position

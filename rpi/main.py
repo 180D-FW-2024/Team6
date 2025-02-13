@@ -32,9 +32,18 @@ def signalHandler(sig, frame):
     camera.close()
     sys.exit(0)
 
+def blinkLED(times):
+    for i in range(0, times):
+        GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+        time.sleep(0.3)
+        GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+        time.sleep(0.3)
+
+
 # Calibrate the magnetometer and get the heading of the closed door
 def calibrateDoorPosition():
     IMU.calibrateIMU()  # determine min/max magnetometer readings
+    blinkLED(3) #blink 3 times after finish calibration
     print("Now please close the door.")
     time.sleep(5)
 
@@ -109,36 +118,48 @@ def detectFaces(path):
 
 # Query server and return bool if door should unlock(true)/lock(false)
 def checkServerUnlock():
-    r = session.get(server+'/getunlocked')
-    data = r.json()
-    if data['door_unlocked']:
-        print("Server says UNLOCK")
-    else:
-        print("Server says LOCK")
-    return data['door_unlocked']
+    try:
+        r = session.get(server+'/getunlocked')
+        data = r.json()
+        if data['door_unlocked']:
+            print("Server says UNLOCK")
+        else:
+            print("Server says LOCK")
+        return data['door_unlocked']
+    except:
+        return False # lock if any error
 
 # Handle button press for speech recording
-def buttonHandling(channel):
-    print("button press")
+def takeMemo(channel):
     # do some stuff with the mic
     #Audio settings
-    RATE = 44100          # Sample rate
+    RATE = 45000          # Sample rate
     DURATION = 5          # Duration of recording (in seconds)
     OUTPUT_FILENAME = "output.wav"
 
     # Record audio
     print("Recording...")
-    audio_data = sd.rec(int(DURATION * RATE), samplerate=RATE, channels=1, dtype='int16')
-    sd.wait()  # Wait for the recording to finish
-    print("Recording finished!")
+    GPIO.output(LED_PIN, 1) # turn LED on
+    try:
 
-    # Save as WAV file
-    write(OUTPUT_FILENAME, RATE, audio_data)
-    print(f"Saved recording to {OUTPUT_FILENAME}")
+        audio_data = sd.rec(int(DURATION * RATE), samplerate=RATE, channels=1, dtype='int16')
+        sd.wait()  # Wait for the recording to finish
+        print("Recording finished!")
+
+        # Save as WAV file
+        write(OUTPUT_FILENAME, RATE, audio_data)
+        print(f"Saved recording to {OUTPUT_FILENAME}")
+    except Exception as e:
+        print("Error recording: ")
+        print(e)
 
     # send to server
-    r = session.post(server+'/receiveaudio', files={'audio': open(OUTPUT_FILENAME, "rb")})
-    print(r)
+    try:
+        r = session.post(server+'/receiveaudio', files={'audio': open(OUTPUT_FILENAME, "rb")})
+        print(r.json())
+    except:
+        print("Error sending message")
+    GPIO.output(LED_PIN, 0) # turn LED off
 
 
 if __name__ == '__main__':
@@ -179,26 +200,11 @@ if __name__ == '__main__':
     IMU.detectIMU()     # Detect if BerryIMU is connected
     IMU.initIMU()       # Initialise the magnetometer
 
-    # On  calibrate: flash twice
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+    # On  start calibrate: flash twice
+    blinkLED(2)
    
     closedDoorHeading = calibrateDoorPosition()
     print(f"Closed heading: {closedDoorHeading}\n")
-
-    # On  finsih calibration: flash twice
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
-    time.sleep(0.3)
-    GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
 
     doorSamples = 25    # num samples to use to determine door open/not
     checkDoorPeriod = 5    # num seconds to periodically check door position
@@ -208,8 +214,6 @@ if __name__ == '__main__':
 
     # Event loop
     while True:
-        #poll status (or callback to update on interrupt) to find if door is moving
-
         # Check door position periodically
         if (datetime.datetime.now() - lastDoorCheck).seconds >= checkDoorPeriod:
             print("Checking door position...")
@@ -232,8 +236,8 @@ if __name__ == '__main__':
             # print(r)
             data=r.json()
             if 'error' in data:
-                buttonHandling(None) # record memo if unknown face
-            time.sleep(1) # remove later
+                takeMemo(None) # record memo if unknown face
+            # time.sleep(1) # remove later
 
         # Query server periodically (3 seconds) if door should open or not
         if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
@@ -243,8 +247,9 @@ if __name__ == '__main__':
             else:
                 pwm.ChangeDutyCycle(5) #lock
             # GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
-        
+        '''
         # Check if button pressed (for speech recording)
         state = GPIO.input(BUTTON_PIN)
         if state:
-            buttonHandling(None)
+            takeMemo(None)
+        '''
