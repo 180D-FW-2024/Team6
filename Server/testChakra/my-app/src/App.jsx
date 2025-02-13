@@ -69,6 +69,8 @@ function App() {
         onNavigateResidents={() => setCurrentPage("residents")}
         onNavigateProduct={() => setCurrentPage("product")}
         onNavigateAbout={() => setCurrentPage("about")}
+        onLoginClick={() => setCurrentPage("login")}
+        onSignupClick={() => setCurrentPage("signup")}
       />
       {/* Page Rendering */}
       {currentPage === "landing" && (
