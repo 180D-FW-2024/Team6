@@ -62,7 +62,7 @@ function Dashboard() {
         </Heading>
         <Grid templateColumns="repeat(auto-fill, minmax(100px, 1fr))" gap={4}>
           {visitors.map((photo, index) => (
-            <Box key={index} textAlign="center" bg="brand.beige" p={2} borderRadius="md">
+            <Box key={index} textAlign="center" bg="brand.beige" p={2} borderRadius="md" _hover={{p: "0"}}>
               <Image src={`data:image/png;base64,${photo.data}`} alt={photo.timestamp} borderRadius="md" />
               <Text>{photo.timestamp}</Text>
             </Box>

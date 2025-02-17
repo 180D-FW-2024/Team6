@@ -80,7 +80,8 @@ def getMemos(lock_id):
     cursor = db.Memos.find({"lock_id" : lock_id})
     memos = []
     for memo in cursor:
-        memos.append({"timestamp" : memo['timestamp'], "data": memo['data']})
+        memos.append({"timestamp" : memo['timestamp'], "data": memo['data'],
+                      "id" : json.loads(json_util.dumps(memo['_id']))["$oid"]})
     return memos
 
 def addMemo(lock_id, memo, timestamp = None):
@@ -88,6 +89,11 @@ def addMemo(lock_id, memo, timestamp = None):
         # print("No timestamp given, using system time.")
         timestamp = datetime.datetime.now()
     db.Memos.insert_one({"timestamp" : timestamp, 'data' : memo, "lock_id" : lock_id})
+
+# Delete memo with the given object id
+def deleteMemo(memo_id):
+    # db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+    db.Memos.delete_one({"_id" : ObjectId(memo_id)})
 
 # Return array of images encoded as base-64 strings(timestamp and data)
 def getVisitors(lock_id):
@@ -110,9 +116,10 @@ def addVisitor(lock_id, img, timestamp = None):
     image_bytes = cv2.imencode('.jpg', img)[1].tobytes() # convert to byte string
     db.Visitors.insert_one({"timestamp" : timestamp, 'data' : image_bytes, "lock_id" : lock_id})
 
-# Delete visitor images with the given object ids
-def deleteVisitors(ids):
-    db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+# Delete visitor images with the given object id
+def deleteVisitor(image_id):
+    # db.Visitors.delete_many({"_id" : {"$in" : [ ObjectId(id) for id in ids ] }})
+    db.Visitors.delete_one({"_id" : ObjectId(image_id)})
 
 def getResidents(lock_id):
     residentArray = []

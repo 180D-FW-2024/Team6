@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Box, Button, Input, Select, VStack, Text, Image, SimpleGrid } from "@chakra-ui/react";
+import { Box, Button, Input, Select, VStack, Text, Image, SimpleGrid, CloseButton, Spacer, HStack } from "@chakra-ui/react";
 
 function Visitors() {
   const [visitors, setVisitors] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [filteredVisitors, setFilteredVisitors] = useState([]);
+  const [rerender, setRerender] = useState(false);
 
   // Fetch visitors from API
   useEffect(() => {
@@ -15,6 +16,7 @@ function Visitors() {
         const formattedVisitors = response.data.map(visitor => ({
           imageSrc: `data:image/jpeg;base64,${visitor.data}`, // Base64 image
           date: new Date(visitor.timestamp),
+          id: visitor.id
         }));
         setVisitors(formattedVisitors);
         setFilteredVisitors(formattedVisitors);
@@ -22,7 +24,7 @@ function Visitors() {
       .catch((error) => {
         console.error("Error fetching visitors:", error);
       });
-  }, []);
+  }, [rerender]);
 
   // Handle search filter
   const handleSearchChange = (event) => {
@@ -39,6 +41,19 @@ function Visitors() {
   const handleSortChange = (event) => {
     setSortOrder(event.target.value);
   };
+
+  // Handle individual image deletion
+  const handleImageDelete = (image_id) => {
+    // console.log("deleting: " + image_id);
+    axios.post('http://localhost:5002/api/delete_photo', 
+      {image_id : image_id}, { withCredentials: true }
+    )
+    .then(() => {setRerender(!rerender)})
+    .catch(error => {
+      console.error('Deleting image error:', error);
+    });
+  };
+
 
   const sortedVisitors = filteredVisitors.sort((a, b) => {
     return sortOrder === "newest"
@@ -64,7 +79,11 @@ function Visitors() {
       <SimpleGrid columns={[2, 3, 5]} spacing={4} mt={5}>
         {sortedVisitors.length > 0 ? (
           sortedVisitors.map((visitor, index) => (
-            <Box key={index} p={2} borderWidth="1px" borderRadius="md" boxShadow="md">
+            <Box key={index} p={2} borderWidth="1px" borderRadius="md" boxShadow="md" _hover={{p: "0"}}>
+              <HStack>
+                <Spacer/>
+                <CloseButton variant="outline" color="red" onClick={() => {handleImageDelete(visitor.id)}}/>
+              </HStack>
               <Image src={visitor.imageSrc} alt={`Visitor ${index}`} borderRadius="md" />
               <Text fontSize="sm" color="gray.500" textAlign="center">{visitor.date.toLocaleString()}</Text>
             </Box>

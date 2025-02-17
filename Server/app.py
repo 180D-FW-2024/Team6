@@ -92,6 +92,13 @@ def voice_memos():
     lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
     return jsonify(db.getMemos(lock_id))
 
+# Delete the memo with the specified object id
+@app.route('/api/delete_memo', methods=['POST'])
+def delete_memo():
+    memo_id = request.json['memo_id']
+    db.deleteMemo(memo_id)
+    return ''
+
 # Sample route to get visitor images as base64 strings
 @app.route('/api/visitors', methods=['GET'])
 def visitors():
@@ -100,12 +107,12 @@ def visitors():
 
 # Delete the photos with the specified photo ids
 # and return the remaining photos
-@app.route('/api/delete_photos', methods=['DELETE'])
-def delete_photos():
-    lock_id = int(request.cookies.get('lock_id', DEFAULT_LOCK_ID))
+@app.route('/api/delete_photo', methods=['POST'])
+def delete_photo():
     # print(request.json)
-    db.deleteVisitors(request.json)
-    return jsonify(db.getVisitors(lock_id))
+    image_id = request.json['image_id']
+    db.deleteVisitor(image_id)
+    return ''
 
 # Get authorized faces(residents) for this lock id
 @app.route('/api/residents', methods=['GET'])

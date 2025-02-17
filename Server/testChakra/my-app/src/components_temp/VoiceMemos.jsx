@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Box, Button, Input, Select, VStack, Text } from "@chakra-ui/react";
+import { Box, Button, Input, Select, VStack, Text, HStack, Spacer, CloseButton } from "@chakra-ui/react";
 
 function VoiceMemos() {
   const [memos, setMemos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [filteredMemos, setFilteredMemos] = useState([]);
+  const [rerender, setRerender] = useState(false);
 
   useEffect(() => {
     axios.get("http://localhost:5002/api/voice_memos", { withCredentials: true })
@@ -14,6 +15,7 @@ function VoiceMemos() {
         const formattedMemos = response.data.map(memo => ({
           content: memo.data,
           date: new Date(memo.timestamp),
+          id: memo.id
         }));
         setMemos(formattedMemos);
         setFilteredMemos(formattedMemos);
@@ -21,7 +23,7 @@ function VoiceMemos() {
       .catch((error) => {
         console.error("Error fetching voice memos:", error);
       });
-  }, []);
+  }, [rerender]);
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
@@ -37,13 +39,23 @@ function VoiceMemos() {
     setSortOrder(event.target.value);
   };
 
+  const handleMemoDelete = (memo_id) => {
+    axios.post('http://localhost:5002/api/delete_memo', 
+      {memo_id : memo_id}, { withCredentials: true }
+    )
+    .then(() => {setRerender(!rerender)})
+    .catch(error => {
+      console.error('Deleting memo error:', error);
+    });
+  };
+
   const sortedMemos = filteredMemos.sort((a, b) => {
     return sortOrder === "newest"
       ? b.date - a.date
       : a.date - b.date;
   });
 
-  console.log(filteredMemos);
+  // console.log(filteredMemos);
 
   return (
     <Box p={5}>
@@ -63,8 +75,12 @@ function VoiceMemos() {
           {sortedMemos.length > 0 ? (
             sortedMemos.map((memo, index) => (
               <Box key={index} p={4} borderWidth="1px" borderRadius="md" width="100%">
-                <Text fontSize="sm" color="gray.500">{memo.date.toLocaleString()}</Text>
-                <Text mt={2}>{memo.content}</Text>
+                 <HStack>
+                    <Text fontSize="sm" color="gray.500">{memo.date.toLocaleString()}</Text>
+                    <Text mt={2}>{memo.content}</Text>
+                    <Spacer/>
+                    <CloseButton variant="outline" color="red" onClick={() => {handleMemoDelete(memo.id)}}/>
+                  </HStack>
               </Box>
             ))
           ) : (
