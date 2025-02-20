@@ -247,9 +247,3 @@ if __name__ == '__main__':
             else:
                 pwm.ChangeDutyCycle(5) #lock
             # GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
-        '''
-        # Check if button pressed (for speech recording)
-        state = GPIO.input(BUTTON_PIN)
-        if state:
-            takeMemo(None)
-        '''
