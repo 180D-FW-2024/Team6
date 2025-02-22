@@ -243,7 +243,7 @@ if __name__ == '__main__':
         if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
             lastServerCheck = datetime.datetime.now()
             if checkServerUnlock():
-                pwm.ChangeDutyCycle(25) #unlock
+                pwm.ChangeDutyCycle(5+round(1.0*20)) #unlock 25
             else:
                 pwm.ChangeDutyCycle(5) #lock
             # GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
