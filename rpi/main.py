@@ -15,7 +15,7 @@ from scipy.io.wavfile import write
 
 doorIsOpen = False
 closedDoorHeading = 0
-openThresholdAngle = 10
+openThresholdAngle = 15
 server = None
 session = None # used to persist cookie with lock id
 
@@ -35,30 +35,58 @@ def signalHandler(sig, frame):
 def blinkLED(times):
     for i in range(0, times):
         GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
-        time.sleep(0.3)
+        time.sleep(0.25)
         GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
-        time.sleep(0.3)
+        time.sleep(0.25)
+
+# Blink LED rapidly on error
+def blinkError():
+    for i in range(0, 5):
+        GPIO.output(LED_PIN, 1) # 0 or 1 for high/low
+        time.sleep(0.1)
+        GPIO.output(LED_PIN, 0) # 0 or 1 for high/low
+        time.sleep(0.1)
 
 
 # Calibrate the magnetometer and get the heading of the closed door
-def calibrateDoorPosition():
-    IMU.calibrateIMU()  # determine min/max magnetometer readings
-    blinkLED(3) #blink 3 times after finish calibration
-    print("Now please close the door.")
-    time.sleep(5)
+def calibrateDoorPosition(attempts=1):
+    if attempts == 0:
+        print("Failed to calibrate; Probably need to reboot rpi")
+        GPIO(LED_PIN, 1)
+        sys.exit()
 
-    closedHeading = IMU.getHeading(50)  # get accurate heading of closed position
-    return closedHeading
+    # On  start calibrate: flash twice
+    blinkLED(2)
+    try:
+        IMU.calibrateIMU()  # determine min/max magnetometer readings
+        print("Now please close the door.")
+        time.sleep(5)
+        closedHeading = IMU.getHeading(30)  # get accurate heading of closed position
+        blinkLED(3) # blink 3 times after finish calibration
+        return closedHeading
+    except Exception as e:
+        print("Error reading IMU: ")
+        print(e)
+        blinkError()
+        time.sleep(1)
+        return calibrateDoorPosition(attempts-1) # try again
+    return 0
 
 # Calculate <samples> angles and check if the median exceeds the threshold angle
 def checkDoorOpen(samples):
-    curHeading = IMU.getHeading(samples)
-    print(f"(Heading: {curHeading})\n")
-    # be careful of wrap around
-    angleBtwn = max(curHeading, closedDoorHeading) - min(curHeading, closedDoorHeading)
-    otherAngleBtwn = 360 - angleBtwn
+    try:
+        curHeading = IMU.getHeading(samples)
+        print(f"(Heading: {curHeading})\n")
+        # be careful of wrap around
+        angleBtwn = max(curHeading, closedDoorHeading) - min(curHeading, closedDoorHeading)
+        otherAngleBtwn = 360 - angleBtwn
 
-    return (min(angleBtwn, otherAngleBtwn) >= openThresholdAngle)
+        return (min(angleBtwn, otherAngleBtwn) >= openThresholdAngle)
+    except Exception as e:
+        print("Error reading IMU: ")
+        print(e)
+        blinkError()
+    return True # Assume door open if error
 
 # Return grayscale faces extracted from image
 def extractFace(frame):
@@ -86,7 +114,6 @@ def extractFace(frame):
         upper_x = min(2*(x+w) + margin, gray_image.shape[1])
         extracted_faces.append(gray_image[lower_y:upper_y, lower_x:upper_x])
         
-
     return extracted_faces, faces
 
 # If faces found, save to file and return the file names as a list
@@ -127,6 +154,7 @@ def checkServerUnlock():
             print("Server says LOCK")
         return data['door_unlocked']
     except:
+        blinkError()
         return False # lock if any error
 
 # Handle button press for speech recording
@@ -141,7 +169,6 @@ def takeMemo(channel):
     print("Recording...")
     GPIO.output(LED_PIN, 1) # turn LED on
     try:
-
         audio_data = sd.rec(int(DURATION * RATE), samplerate=RATE, channels=1, dtype='int16')
         sd.wait()  # Wait for the recording to finish
         print("Recording finished!")
@@ -152,6 +179,7 @@ def takeMemo(channel):
     except Exception as e:
         print("Error recording: ")
         print(e)
+        blinkError()
 
     # send to server
     try:
@@ -159,6 +187,7 @@ def takeMemo(channel):
         print(r.json())
     except:
         print("Error sending message")
+        blinkError()
     GPIO.output(LED_PIN, 0) # turn LED off
 
 
@@ -180,10 +209,8 @@ if __name__ == '__main__':
     GPIO.setup(LED_PIN, GPIO.OUT)
     GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #pull down 
 
+    GPIO.output(LED_PIN, 1)
     # GPIO.output(SOLENOID_PIN, 1) # 0 or 1 for high/low
-
-    # GPIO.add_event_detect(BUTTON_PIN, GPIO.RISING, callback=buttonHandling, bouncetime=2000)
-
 
     # Initialize camera
     camera = picamera.PiCamera()
@@ -199,11 +226,8 @@ if __name__ == '__main__':
     # Initialize IMU and callibrate closed door position
     IMU.detectIMU()     # Detect if BerryIMU is connected
     IMU.initIMU()       # Initialise the magnetometer
-
-    # On  start calibrate: flash twice
-    blinkLED(2)
    
-    closedDoorHeading = calibrateDoorPosition()
+    closedDoorHeading = calibrateDoorPosition(5)
     print(f"Closed heading: {closedDoorHeading}\n")
 
     doorSamples = 25    # num samples to use to determine door open/not
@@ -217,16 +241,21 @@ if __name__ == '__main__':
         # Check door position periodically
         if (datetime.datetime.now() - lastDoorCheck).seconds >= checkDoorPeriod:
             print("Checking door position...")
-            doorIsOpen = checkDoorOpen(doorSamples)
-            lastDoorCheck = datetime.datetime.now()
+            try:
+                doorIsOpen = checkDoorOpen(doorSamples)
+                lastDoorCheck = datetime.datetime.now()
 
-            if doorIsOpen:
-                print("DOOR IS OPEN")
-            else:
-                print("DOOR IS CLOSED")
-            # Notify server (blocking)
-            r = session.post(server+'/receiveposition', data={'position':'open' if doorIsOpen else 'closed'})
-            print(r)
+                if doorIsOpen:
+                    print("DOOR IS OPEN")
+                else:
+                    print("DOOR IS CLOSED")
+                # Notify server (blocking)
+                r = session.post(server+'/receiveposition', data={'position':'open' if doorIsOpen else 'closed'})
+                print(r)
+            except Exception as e:
+                print("Error reading/sending door position: ")
+                print(e)
+                blinkError()
         
         # Check if face detected as often as possible
         faceFiles = detectFaces("detected_faces")

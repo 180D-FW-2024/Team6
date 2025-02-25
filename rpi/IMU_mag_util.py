@@ -117,14 +117,13 @@ def calibrateIMU():
         rawmagXmax = max(rawmagXmax, magX)
         rawmagYmax = max(rawmagYmax, magY)
         rawmagZmax = max(rawmagZmax, magZ)
-        # time.sleep(0.25 /1e6) # ** not sure if necessary
+        time.sleep(0.8 /1e6) # ** not sure if necessary
     magXmax = rawmagXmax
     magYmax = rawmagYmax
     magZmax = rawmagZmax
     magXmin = rawmagXmin
     magYmin = rawmagYmin
     magZmin = rawmagZmin
-    print('Calibration complete.')
 
 # Calculate the heading over n samples (multiple samples required for filters)
 def getHeading(samples):
@@ -147,6 +146,7 @@ def getHeading(samples):
         MAGx = readMAGx()
         MAGy = readMAGy()
         MAGz = readMAGz()
+        time.sleep(0.8 /1e6) # ** not sure if necessary
 
         # #Apply compass calibration
         MAGx -= (magXmin + magXmax) /2
