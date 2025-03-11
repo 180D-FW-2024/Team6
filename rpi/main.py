@@ -53,7 +53,8 @@ def calibrateDoorPosition(attempts=1):
     if attempts == 0:
         print("Failed to calibrate; Probably need to reboot rpi")
         GPIO(LED_PIN, 1)
-        sys.exit()
+        time.sleep(3)
+        # sys.exit()
 
     # On  start calibrate: flash twice
     blinkLED(2)
@@ -271,8 +272,13 @@ if __name__ == '__main__':
         # Query server periodically (3 seconds) if door should open or not
         if (datetime.datetime.now() - lastServerCheck).seconds >= checkServerPeriod:
             lastServerCheck = datetime.datetime.now()
+            LOCK_ANGLE = 0.9 #as fraction of full range
             if checkServerUnlock():
-                pwm.ChangeDutyCycle(5+round(1.0*20)) #unlock 25
+                pwm.ChangeDutyCycle(5+round(LOCK_ANGLE*20)) #unlock 25 (270 degrees)
+                # time.sleep(1)
+                # pwm.ChangeDutyCycle(5+round(LOCK_ANGLE*20/2)) #go to halfway point
             else:
-                pwm.ChangeDutyCycle(5) #lock
+                pwm.ChangeDutyCycle(5) #lock (0 degrees)
+                # time.sleep(1)
+                # pwm.ChangeDutyCycle(5+round(LOCK_ANGLE*20/2)) #go to halfway point
             # GPIO.output(SOLENOID_PIN, 1 if checkServerUnlock() else 0)
