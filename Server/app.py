@@ -212,8 +212,10 @@ def receive_image():
         return jsonify({'error': 'No face detected'}), 300
     
     # no faces matched
+    # lock door if unconfident
     if len(dfs[0]) == 0:
         print("Nobody")
+        db.lockDoor(lock_id)
         return jsonify({'error': 'Unknown face'}), 301
     
     temp = dfs[0].loc[0, :]
@@ -223,8 +225,10 @@ def receive_image():
 
     if confidence > 0.5:
         print("Not confident enough (%s, %f)" % (matched_name, confidence))
+        db.lockDoor(lock_id)
         return jsonify({'error': 'Unknown face(not confident enough)'}), 301
     
+    # unlock door if recognized face
     db.unlockDoor(lock_id)
     print(confidence)
     print(matched_name)

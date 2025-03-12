@@ -21,7 +21,7 @@ session = None # used to persist cookie with lock id
 
 # SOLENOID_PIN = 23
 SERVO_PIN = 26
-LED_PIN = 22
+LED_PIN = 17 # 22
 BUTTON_PIN = 27
 
 # Used to clean up when Ctrl-c is pressed
