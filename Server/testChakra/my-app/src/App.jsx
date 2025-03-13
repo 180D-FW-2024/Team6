@@ -6,8 +6,8 @@ import Login from "./components_temp/Login";
 import Signup from "./components_temp/Signup";
 import LandingPage from "./components_temp/LandingPage";
 import Dashboard from "./components_temp/Dashboard";
-import ProductPage from "./components_temp/ProductPage";
-import AboutUsPage from "./components_temp/AboutUsPage";
+// import ProductPage from "./components_temp/ProductPage";
+// import AboutUsPage from "./components_temp/AboutUsPage";
 import SettingsPage from "./components_temp/SettingsPage";
 import VoiceMemos from "./components_temp/VoiceMemos";
 import Residents from "./components_temp/Residents";
@@ -67,8 +67,8 @@ function App() {
         onNavigateVoiceMemos={() => setCurrentPage("voiceMemos")}
         onNavigateVisitors={() => setCurrentPage("visitors")}
         onNavigateResidents={() => setCurrentPage("residents")}
-        onNavigateProduct={() => setCurrentPage("product")}
-        onNavigateAbout={() => setCurrentPage("about")}
+        // onNavigateProduct={() => setCurrentPage("product")}
+        // onNavigateAbout={() => setCurrentPage("about")}
         onLoginClick={() => setCurrentPage("login")}
         onSignupClick={() => setCurrentPage("signup")}
       />
@@ -97,8 +97,8 @@ function App() {
       {currentPage === "dashboard" && isLoggedIn && <Dashboard />}
       {currentPage === "voiceMemos" && <VoiceMemos />}
       {currentPage === "residents" && <Residents />}
-      {currentPage === "product" && <ProductPage />}
-      {currentPage === "about" && <AboutUsPage />}
+      {/* {currentPage === "product" && <ProductPage />} */}
+      {/* {currentPage === "about" && <AboutUsPage />} */}
       {currentPage === "settings" && <SettingsPage />}
       {currentPage === "visitors" && <Visitors />}
 

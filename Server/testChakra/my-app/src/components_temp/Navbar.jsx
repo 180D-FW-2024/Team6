@@ -12,7 +12,7 @@ function Navbar({
   onNavigateVoiceMemos,
   onNavigateVisitors,
   onNavigateProduct,
-  onNavigateAbout,
+  // onNavigateAbout,
   onNavigateResidents,
   onLoginClick,
   onSignupClick,
@@ -38,7 +38,7 @@ function Navbar({
       </Box>
 
       {/* Links for "About Us" and "Product" (Landing, Product, About pages) */}
-      {(!isLoggedIn || currentPage === "landing" || currentPage === "product" || currentPage === "about") && (
+      {/* {(!isLoggedIn || currentPage === "landing" || currentPage === "product" || currentPage === "about") && (
         <HStack spacing={6} ml={6}>
           <Link
             onClick={onNavigateProduct}
@@ -57,7 +57,7 @@ function Navbar({
             About Us
           </Link>
         </HStack>
-      )}
+      )} */}
 
       {/* Links for Voice Memos and Visitors (only when logged in) */}
       {isLoggedIn && (
