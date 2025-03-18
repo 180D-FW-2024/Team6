@@ -1,3 +1,5 @@
+# Initial attempt at face detection(Haar cascades) and recognition(LBPH) using openCV
+
 # Example code for face detection and recognition using opencv
 # Largely referenced code at :
 # https://towardsdatascience.com/real-time-face-recognition-an-end-to-end-project-b738bb0f7348
@@ -10,7 +12,6 @@
 import cv2 as cv
 import numpy as np
 import os
-
 
 #Detect faces w/ Haar Cascade Classifier, draw a box around them, and identify them w/ LBPH
 def faceDetection(model):
@@ -127,12 +128,10 @@ if __name__ == '__main__':
     getTrainingData("face_data", 0, 50)
     trainModel("face_data")
 
-
     # To run the model on live feed, uncomment the lines below:
     # model = cv.face.LBPHFaceRecognizer_create()
     # model.read("trainer.yml")
     # faceDetection(model)
-
 
     cv.destroyAllWindows()
 

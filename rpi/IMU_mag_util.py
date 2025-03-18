@@ -1,6 +1,5 @@
 # Selected initialization functions, angle calucations, and constants from
 # https://github.com/ozzmaker/BerryIMU/blob/master/python-BerryIMU-gyro-accel-compass-filters
-# (which also includes Kalman filtering)
 
 # IMU register mappings on spec sheet
 # https://www.st.com/resource/en/datasheet/lis3mdl.pdf

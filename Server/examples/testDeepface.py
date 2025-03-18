@@ -1,3 +1,5 @@
+# Face recognition testbench
+
 # pip install deepface
 # tf-keras
 
@@ -22,7 +24,7 @@ import cv2
 # compare against multiple images (returns pandas dataframe)
 # dfs = DeepFace.find(
 #   img_path = "test_yin2.jpg",
-#   db_path = "../static/known_faces",	# it says we're very alike...ok
+#   db_path = "../static/known_faces",
 #   # model_name = "Facenet"
 # )
 # print(dfs)

@@ -1,26 +1,45 @@
-To run server:
-    As a Docker container:
-        Start up docker.
-        Then run:
-        $ docker build . --network=host -t flask_server
+# To run server:
+First create a MongoDB database called ‘LockDB’ and add the uri key to mongodb.py in Server/.
+## As a Docker container:
+Start up docker and run:
 
-        After it has finished building the image, run
-        $ docker run -p  5002:5002 -it --name flask_server flask_server
-        to start the container in interactive mode
+`docker build . --network=host -t flask_server`
 
-        HTTP requests to port 5002 will be forwarded to the flask app.
-    
-    Locally:
-        python3 -m venv myenv
-            source myenv/bin/activate
+After it has finished building the image, run:
 
-        run pip install -r requirements.txt
+`docker run -p  5002:5002 -it --name flask_server flask_server`
 
-        Move the Haar Cascade classifiers to where Deepface can access them
-            cp haarcascade_eye.xml <path to myenv>/lib/python<version>/site-packages/data/
-            cp haarcascade_frontalface_default.xml <path to myenv>/lib/python<version>/site-packages/data/
-        run 
-            python app.py
+to start the container in interactive mode.
 
+HTTP requests to port 5002 will be forwarded to the flask app.
 
-        apt-get install ffmpeg libavcodec-extra
+## Locally:
+Create a python environment and install dependencies:
+```
+python3 -m venv myenv
+source myenv/bin/activate
+```
+```
+pip install -r requirements.txt
+```
+
+Then run with:
+```
+python app.py
+```
+
+Ensure ngrok is running to forward external traffic from the Rpi.
+(`ngrok https 5002 --url <domain>`)
+
+apt-get install ffmpeg libavcodec-extra
+
+# To run web client:
+Install dependencies:
+```
+cd Server/testChakra/myapp
+npm install
+```
+To run:
+```
+npm run dev
+```
