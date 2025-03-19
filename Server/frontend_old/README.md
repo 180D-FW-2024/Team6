@@ -1,4 +1,6 @@
-# Getting Started with Create React App
+# Old front end before migrating to ChakraUI
+
+## Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 

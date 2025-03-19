@@ -22,19 +22,7 @@ def initDB():
     # Create a new client and connect to the server
     client = MongoClient(uri, server_api=ServerApi('1'))
     db = client.LockDB # database
-
     time.sleep(1)
-
-    # For testing -- note: there is a reload after initialization
-    # if verifyUser("person a", "a") and not verifyUser("person a", "wrong"):
-    #     print("verify success")
-    # else:
-    #     print("verify wrong")
-
-    # img = cv2.imread("static/recvd_faces/orange.png")
-    # addVisitor("person a", img, datetime.datetime.now())
-    # img = cv2.imread("static/recvd_faces/11-28-2024_22.52.28.jpg")
-    # addVisitor("person a", img, datetime.datetime.now())
 
 # Verify name and password combination
 def verifyLock(username, password):

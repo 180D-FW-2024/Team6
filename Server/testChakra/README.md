@@ -1,4 +1,13 @@
-# React + Vite
+# Current front end using ChakraUI
+Install dependencies on the first run with
+```
+npm install
+```
+and then run with
+```
+npm run dev
+```
+## React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
