@@ -36,7 +36,7 @@ apt-get install ffmpeg libavcodec-extra
 # To run web client:
 Install dependencies:
 ```
-cd Server/testChakra/myapp
+cd Server/frontend/myapp
 npm install
 ```
 To run:

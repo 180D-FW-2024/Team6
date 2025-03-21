@@ -1,4 +1,7 @@
 # Current front end using ChakraUI
+
+The frontend allows logged-in users to monitor/modify the status of their lock and modify locking permissions.
+
 Install dependencies on the first run with
 ```
 npm install
